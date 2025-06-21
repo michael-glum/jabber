@@ -2,6 +2,14 @@
 export type Post = {
   id: string;
   text: string;
+  username: string;
+  userId: string;
+  likes: number;
+  reactions: Record<string, number>;
+  commentCount: number;
+  createdAt: string;
+  isLiked?: boolean;
+  userReaction?: string;
 }
 
 export type User = {
@@ -16,4 +24,6 @@ export type Comment = {
   postId: string;
   text: string;
   author: string;
+  userId: string;
+  createdAt: string;
 };

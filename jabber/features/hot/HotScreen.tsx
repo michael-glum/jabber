@@ -4,6 +4,7 @@ import { Screen } from '~/shared/components/ui/Screen'
 import { useHotPosts } from './hooks/useHotPosts'
 import Header from '~/shared/components/header/header'
 import JabberScore from '~/shared/components/jabberscore/jabberscore'
+import PostCard from '~/shared/components/post/PostCard'
 
 export default function HotScreen() {
   return (
@@ -20,9 +21,12 @@ export default function HotScreen() {
             'All Time': () => useHotPosts('allTime'),
           }}
           renderItem={(post) => (
-            <YStack p="$4" borderBottomWidth={1} borderColor="$borderColor">
-              <Text fontSize="$5">{post.text}</Text>
-            </YStack>
+            <PostCard
+              post={post}
+              onLike={() => console.log('Liked post:', post.id)}
+              onReact={(emoji) => console.log('Reacted with:', emoji)}
+              onComment={() => console.log('Commented on post:', post.id)}
+            />
           )}
         />
       </YStack>

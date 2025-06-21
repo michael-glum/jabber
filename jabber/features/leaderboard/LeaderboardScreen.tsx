@@ -6,25 +6,7 @@ import { User } from '~/shared/models/types';
 import { Screen } from '~/shared/components/ui/Screen';
 import Header from '~/shared/components/header/header';
 import JabberScore from '~/shared/components/jabberscore/jabberscore';
-
-function UserCard({ user, rank }: { user: User; rank: number }) {
-  return (
-    <XStack
-      p="$3"
-      borderBottomWidth={1}
-      borderColor="$borderColor"
-      items="center"
-      gap="$3"
-    >
-      <Text fontWeight="bold" fontSize="$5" width={30}>#{rank}</Text>
-      <YStack flex={1}>
-        <Text fontSize="$5">{user.username}</Text>
-        <Text fontSize="$2" color="$color10">{user.region}</Text>
-      </YStack>
-      <Text fontWeight="600" fontSize="$4">{user.jabberScore}</Text>
-    </XStack>
-  );
-}
+import { UserCard } from '~/shared/components/user/UserCard';
 
 export default function LeaderboardScreen() {
   return (
@@ -41,7 +23,11 @@ export default function LeaderboardScreen() {
             'All Time': () => useLeaderboardUsers('allTime'),
           }}
           renderItem={(user, _tab, index = 0) => (
-            <UserCard user={user} rank={index + 1} />
+            <UserCard 
+              user={user} 
+              rank={index + 1}
+              onPress={() => console.log('Navigate to user:', user.username)}
+            />
           )}
         />
       </YStack>

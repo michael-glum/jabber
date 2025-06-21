@@ -5,6 +5,7 @@ import { useForYouPosts } from './hooks/useForYouPosts'
 import { useLocalPostStore } from '~/shared/store/postStore';
 import Header from '~/shared/components/header/header';
 import JabberScore from '~/shared/components/jabberscore/jabberscore';
+import PostCard from '~/shared/components/post/PostCard';
 
 export default function ForYouScreen() {
   const localNewPost = useLocalPostStore((state) => state.localNewPost);
@@ -22,9 +23,12 @@ export default function ForYouScreen() {
             'For You': useForYouPosts,
           }}
           renderItem={(post) => (
-            <YStack p="$4" borderBottomWidth={1} borderBottomColor="$borderColor">
-              <Text fontSize="$5">{post.text}</Text>  
-            </YStack>
+            <PostCard
+              post={post}
+              onLike={() => console.log('Liked post:', post.id)}
+              onReact={(emoji) => console.log('Reacted with:', emoji)}
+              onComment={() => console.log('Commented on post:', post.id)}
+            />
           )}
           localNewItem={localNewPost}
         />
