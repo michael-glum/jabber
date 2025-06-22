@@ -23,7 +23,6 @@ export default function HotScreen() {
           renderItem={(post) => (
             <PostCard
               post={post}
-              onLike={() => console.log('Liked post:', post.id)}
               onReact={(emoji) => console.log('Reacted with:', emoji)}
               onComment={() => console.log('Commented on post:', post.id)}
             />

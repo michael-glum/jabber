@@ -21,7 +21,7 @@ export default function ProfileScreen() {
         title={currentUser?.username || 'Profile'}
         rightComponent={<JabberScore />}
       />
-      
+
       {/* Profile Header */}
       <YStack 
         bg="$background" 
@@ -64,7 +64,6 @@ export default function ProfileScreen() {
           renderItem={(post) => (
             <PostCard
               post={post}
-              onLike={() => console.log('Liked own post:', post.id)}
               onReact={(emoji) => console.log('Reacted with:', emoji)}
               onComment={() => console.log('Comment on own post:', post.id)}
             />

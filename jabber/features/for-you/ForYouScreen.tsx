@@ -18,14 +18,12 @@ export default function ForYouScreen() {
       />
       <YStack flex={1} bg="$background">
         <Feed
-          tabNames={['For You'] as const}
           dataHookMap={{
             'For You': useForYouPosts,
           }}
           renderItem={(post) => (
             <PostCard
               post={post}
-              onLike={() => console.log('Liked post:', post.id)}
               onReact={(emoji) => console.log('Reacted with:', emoji)}
               onComment={() => console.log('Commented on post:', post.id)}
             />
