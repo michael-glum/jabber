@@ -45,7 +45,6 @@ const calculateJabberScore = (post: Post) => {
 export default function PostCard({ post, onReact, onComment }: PostCardProps) {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [userReaction, setUserReaction] = useState(post.userReaction);
-  const scrollRef = useRef<ScrollView>(null);
   const jabberScore = calculateJabberScore(post);
 
   const handleReact = (emoji: string) => {
@@ -67,16 +66,14 @@ export default function PostCard({ post, onReact, onComment }: PostCardProps) {
   return (
     <YStack
       bg="$backgroundStrong"
-      rounded="$4"
-      mx="$3"
+      rounded="$6"
+      mx="$2"
       my="$2"
       p="$4"
       gap="$3"
-      shadowColor="$shadowColor"
-      shadowOpacity={0.05}
-      shadowRadius={4}
-      shadowOffset={{ width: 0, height: 2 }}
-      pressStyle={{ opacity: 0.98, scale: 0.995 }}
+      borderWidth={4}
+      borderColor="$blue4"
+      pressStyle={{ opacity: 0.9, scale: 0.9 }}
       animation="quick"
     >
       {/* Header with username and jabber score */}
@@ -109,7 +106,7 @@ export default function PostCard({ post, onReact, onComment }: PostCardProps) {
         {post.text}
       </Text>
 
-      {/* Bottom section with comments and reactions */}
+      {/* Bottom section with comments and plus button */}
       <XStack items="center" justify="space-between" gap="$3">
         {/* Comment count */}
         <Pressable onPress={onComment}>
@@ -121,70 +118,59 @@ export default function PostCard({ post, onReact, onComment }: PostCardProps) {
           </XStack>
         </Pressable>
 
-        {/* Reactions section */}
-        <XStack flex={1} items="center" justify="flex-end" gap="$2">
-          {/* Scrollable reactions */}
-          {sortedReactions.length > 0 && (
-            <ScrollView
-              ref={scrollRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ flex: 1 }}
-              contentContainerStyle={{ 
-                paddingRight: 8,
-                alignItems: 'center',
-                gap: 8
-              }}
-            >
-              <XStack gap="$2">
-                {sortedReactions.map(({ emoji, count }) => (
-                  <Pressable key={emoji} onPress={() => handleReact(emoji)}>
-                    <XStack
-                      items="center"
-                      gap="$1"
-                      px="$2.5"
-                      py="$1.5"
-                      rounded="$10"
-                      bg={emoji === userReaction ? "$accent" : "$backgroundStrong"}
-                      borderWidth={1}
-                      borderColor={emoji === userReaction ? "$accentForeground" : "$borderColor"}
-                      pressStyle={{ scale: 0.95 }}
-                      animation="quick"
-                    >
-                      <Text fontSize="$3">{emoji}</Text>
-                      <Text 
-                        fontSize="$2" 
-                        color={emoji === userReaction ? "$accentForeground" : "$color10"} 
-                        fontWeight="600"
-                      >
-                        {count}
-                      </Text>
-                    </XStack>
-                  </Pressable>
-                ))}
-              </XStack>
-            </ScrollView>
-          )}
-
-          {/* Plus button */}
-          <Pressable onPress={() => setShowReactionPicker(!showReactionPicker)}>
-            <XStack
-              items="center"
-              justify="center"
-              width={36}
-              height={36}
-              rounded="$10"
-              bg={showReactionPicker ? "$color2" : "$backgroundStrong"}
-              borderWidth={1}
-              borderColor="$borderColor"
-              pressStyle={{ scale: 0.9 }}
-              animation="quick"
-            >
-              <Plus size={18} color="$color10" />
-            </XStack>
-          </Pressable>
-        </XStack>
+        {/* Plus button */}
+        <Pressable onPress={() => setShowReactionPicker(!showReactionPicker)}>
+          <XStack
+            items="center"
+            justify="center"
+            width={36}
+            height={36}
+            rounded="$10"
+            bg={showReactionPicker ? "$color2" : "$backgroundStrong"}
+            borderWidth={1}
+            borderColor="$borderColor"
+            pressStyle={{ scale: 0.9 }}
+            animation="quick"
+          >
+            <Plus size={18} color="$color10" />
+          </XStack>
+        </Pressable>
       </XStack>
+
+      {/* Reactions section - wrapped row */}
+      {sortedReactions.length > 0 && (
+        <XStack flexWrap="wrap" gap="$2">
+          {sortedReactions.map(({ emoji, count }) => (
+            <Pressable key={emoji} onPress={() => handleReact(emoji)}>
+              <XStack
+                items="center"
+                gap="$1"
+                px="$2"
+                py="$1.5"
+                rounded="$8"
+                bg={emoji === userReaction ? "$yellow2" : "$backgroundStrong"}
+                borderWidth={1.5}
+                borderColor={emoji === userReaction ? "$yellow5" : "$borderColor"}
+                shadowColor="$shadowColor"
+                shadowOpacity={0.05}
+                shadowRadius={2}
+                shadowOffset={{ width: 0, height: 1 }}
+                pressStyle={{ scale: 0.9, opacity: 0.9 }}
+                animation="bouncy"
+              >
+                <Text fontSize="$3" color={emoji === userReaction ? "$yellow10" : "$color"}>{emoji}</Text>
+                <Text 
+                  fontSize="$1" 
+                  color={emoji === userReaction ? "$yellow10" : "$color10"} 
+                  fontWeight="700"
+                >
+                  {count}
+                </Text>
+              </XStack>
+            </Pressable>
+          ))}
+        </XStack>
+      )}
 
       {/* Reaction Picker Popover */}
       <AnimatePresence>

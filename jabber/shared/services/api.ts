@@ -34,11 +34,11 @@ const generateReactions = () => {
   const emojis = ['🔥', '💀', '😭', '🤯', '👀', '✨', '🤡', '💯', '👻', '🎉'];
   
   // Add 2-5 random reactions
-  const reactionCount = Math.floor(Math.random() * 4) + 2;
+  const reactionCount = Math.floor(Math.random() * 8) + 2;
   for (let i = 0; i < reactionCount; i++) {
     const emoji = emojis[Math.floor(Math.random() * emojis.length)];
     if (!reactions[emoji]) {
-      reactions[emoji] = Math.floor(Math.random() * 100) + 1;
+      reactions[emoji] = Math.floor(Math.random() * 10000) + 1;
     }
   }
   

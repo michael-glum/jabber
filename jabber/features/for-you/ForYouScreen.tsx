@@ -18,6 +18,7 @@ export default function ForYouScreen() {
       />
       <YStack flex={1} bg="$background">
         <Feed
+          tabNames={['For You'] as const}
           dataHookMap={{
             'For You': useForYouPosts,
           }}
