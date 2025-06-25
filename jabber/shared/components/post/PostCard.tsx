@@ -1,5 +1,5 @@
 // shared/components/post/PostCard.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { ScrollView, Pressable } from 'react-native';
 import { YStack, XStack, Text, AnimatePresence, View } from 'tamagui';
 import { MessageCircle, Trophy, Plus } from '@tamagui/lucide-icons';
@@ -35,33 +35,174 @@ const REACTION_EMOJIS = [
   { emoji: '👁️', key: 'eye' },
 ];
 
+// Memoized sub-components
+const ReactionButton = React.memo(({ 
+  emoji, 
+  count, 
+  isUserReaction, 
+  onPress 
+}: { 
+  emoji: string; 
+  count: number; 
+  isUserReaction: boolean; 
+  onPress: () => void;
+}) => (
+  <Pressable onPress={onPress}>
+    <XStack
+      items="center"
+      gap="$1"
+      px="$2"
+      py="$1.5"
+      rounded="$8"
+      bg={isUserReaction ? "$yellow2" : "$backgroundStrong"}
+      borderWidth={1.5}
+      borderColor={isUserReaction ? "$yellow5" : "$borderColor"}
+      shadowColor="$shadowColor"
+      shadowOpacity={0.05}
+      shadowRadius={2}
+      shadowOffset={{ width: 0, height: 1 }}
+      pressStyle={{ scale: 0.9, opacity: 0.9 }}
+      animation="bouncy"
+    >
+      <Text fontSize="$3" color={isUserReaction ? "$yellow10" : "$color"}>{emoji}</Text>
+      <Text 
+        fontSize="$1" 
+        color={isUserReaction ? "$yellow10" : "$color10"} 
+        fontWeight="700"
+      >
+        {count}
+      </Text>
+    </XStack>
+  </Pressable>
+));
+
+const CommentButton = React.memo(({ 
+  count, 
+  onPress 
+}: { 
+  count: number; 
+  onPress?: () => void;
+}) => (
+  <Pressable onPress={onPress}>
+    <XStack items="center" gap="$2" opacity={0.7} pressStyle={{ opacity: 0.5 }}>
+      <MessageCircle size={20} color="$color10"/>
+      <Text fontSize="$3" color="$color10">
+        {count}
+      </Text>
+    </XStack>
+  </Pressable>
+));
+
+const ReactionPicker = React.memo(({ 
+  userReaction, 
+  onReact, 
+  onClose 
+}: { 
+  userReaction?: string;
+  onReact: (emoji: string) => void;
+  onClose: () => void;
+}) => (
+  <>
+    <Pressable 
+      onPress={onClose}
+      style={{
+        position: 'absolute',
+        top: -1000,
+        bottom: -1000,
+        left: -1000,
+        right: -1000,
+        zIndex: 999
+      }}
+    />
+    
+    <View
+      animation="quick"
+      enterStyle={{ opacity: 0, scale: 0.9, y: 10 }}
+      exitStyle={{ opacity: 0, scale: 0.9, y: 10 }}
+      opacity={1}
+      scale={1}
+      y={0}
+      position="absolute"
+      b={60}
+      r={16}
+      z={1000}
+    >
+      <YStack
+        bg="$backgroundStrong"
+        rounded="$4"
+        p="$3"
+        shadowColor="$shadowColor"
+        shadowOpacity={0.15}
+        shadowRadius={8}
+        shadowOffset={{ width: 0, height: 4 }}
+        borderWidth={1}
+        borderColor="$borderColor"
+        gap="$2"
+        width={240}
+      >
+        <Text fontSize="$3" fontWeight="600" color="$color10" mb="$2">
+          React with:
+        </Text>
+        <XStack flexWrap="wrap" gap="$2">
+          {REACTION_EMOJIS.map(({ emoji, key }) => (
+            <Pressable key={key} onPress={() => onReact(emoji)}>
+              <XStack
+                px="$3"
+                py="$2"
+                rounded="$10"
+                bg={emoji === userReaction ? "$accent" : "$color2"}
+                borderWidth={1}
+                borderColor={emoji === userReaction ? "$accentForeground" : "$borderColor"}
+                pressStyle={{ scale: 1.1 }}
+                animation="bouncy"
+              >
+                <Text fontSize="$5">{emoji}</Text>
+              </XStack>
+            </Pressable>
+          ))}
+        </XStack>
+      </YStack>
+    </View>
+  </>
+));
+
 // Calculate jabber score based on engagement
 const calculateJabberScore = (post: Post) => {
   const reactionCount = Object.values(post.reactions || {}).reduce((a, b) => a + b, 0);
-  // Base score of 10 + reactions + double weight for comments
   return 10 + reactionCount + (post.commentCount * 2);
 };
 
-export default function PostCard({ post, onReact, onComment }: PostCardProps) {
+export const PostCard = React.memo(({ post, onReact, onComment }: PostCardProps) => {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [userReaction, setUserReaction] = useState(post.userReaction);
-  const jabberScore = calculateJabberScore(post);
+  
+  // Memoize calculated values
+  const jabberScore = useMemo(() => calculateJabberScore(post), [post]);
+  const sortedReactions = useMemo(() => 
+    Object.entries(post.reactions || {})
+      .sort(([, a], [, b]) => b - a)
+      .map(([emoji, count]) => ({ emoji, count })),
+    [post.reactions]
+  );
 
-  const handleReact = (emoji: string) => {
-    // Users can only react once - if they tap their current reaction, remove it
-    if (emoji === userReaction) {
-      setUserReaction(undefined);
-    } else {
-      setUserReaction(emoji);
-    }
+  // Stable callbacks
+  const handleReact = useCallback((emoji: string) => {
+    setUserReaction(current => emoji === current ? undefined : emoji);
     onReact?.(emoji);
     setShowReactionPicker(false);
-  };
+  }, [onReact]);
 
-  // Get sorted reactions for display
-  const sortedReactions = Object.entries(post.reactions || {})
-    .sort(([, a], [, b]) => b - a)
-    .map(([emoji, count]) => ({ emoji, count }));
+  const toggleReactionPicker = useCallback(() => {
+    setShowReactionPicker(prev => !prev);
+  }, []);
+
+  const closeReactionPicker = useCallback(() => {
+    setShowReactionPicker(false);
+  }, []);
+
+  const handleReactionPress = useCallback((emoji: string) => {
+    handleReact(emoji);
+  }, [handleReact]);
 
   return (
     <YStack
@@ -109,17 +250,10 @@ export default function PostCard({ post, onReact, onComment }: PostCardProps) {
       {/* Bottom section with comments and plus button */}
       <XStack items="center" justify="space-between" gap="$3">
         {/* Comment count */}
-        <Pressable onPress={onComment}>
-          <XStack items="center" gap="$2" opacity={0.7} pressStyle={{ opacity: 0.5 }}>
-            <MessageCircle size={20} color="$color10"/>
-            <Text fontSize="$3" color="$color10">
-              {post.commentCount}
-            </Text>
-          </XStack>
-        </Pressable>
+        <CommentButton count={post.commentCount} onPress={onComment} />
 
         {/* Plus button */}
-        <Pressable onPress={() => setShowReactionPicker(!showReactionPicker)}>
+        <Pressable onPress={toggleReactionPicker}>
           <XStack
             items="center"
             justify="center"
@@ -141,33 +275,13 @@ export default function PostCard({ post, onReact, onComment }: PostCardProps) {
       {sortedReactions.length > 0 && (
         <XStack flexWrap="wrap" gap="$2">
           {sortedReactions.map(({ emoji, count }) => (
-            <Pressable key={emoji} onPress={() => handleReact(emoji)}>
-              <XStack
-                items="center"
-                gap="$1"
-                px="$2"
-                py="$1.5"
-                rounded="$8"
-                bg={emoji === userReaction ? "$yellow2" : "$backgroundStrong"}
-                borderWidth={1.5}
-                borderColor={emoji === userReaction ? "$yellow5" : "$borderColor"}
-                shadowColor="$shadowColor"
-                shadowOpacity={0.05}
-                shadowRadius={2}
-                shadowOffset={{ width: 0, height: 1 }}
-                pressStyle={{ scale: 0.9, opacity: 0.9 }}
-                animation="bouncy"
-              >
-                <Text fontSize="$3" color={emoji === userReaction ? "$yellow10" : "$color"}>{emoji}</Text>
-                <Text 
-                  fontSize="$1" 
-                  color={emoji === userReaction ? "$yellow10" : "$color10"} 
-                  fontWeight="700"
-                >
-                  {count}
-                </Text>
-              </XStack>
-            </Pressable>
+            <ReactionButton 
+              key={emoji}
+              emoji={emoji}
+              count={count}
+              isUserReaction={emoji === userReaction}
+              onPress={() => handleReactionPress(emoji)}
+            />
           ))}
         </XStack>
       )}
@@ -175,71 +289,23 @@ export default function PostCard({ post, onReact, onComment }: PostCardProps) {
       {/* Reaction Picker Popover */}
       <AnimatePresence>
         {showReactionPicker && (
-          <>
-            {/* Overlay to close popover on outside tap */}
-            <Pressable 
-              onPress={() => setShowReactionPicker(false)}
-              style={{
-                position: 'absolute',
-                top: -1000,
-                bottom: -1000,
-                left: -1000,
-                right: -1000,
-                zIndex: 999
-              }}
-            />
-            
-            <View
-              animation="quick"
-              enterStyle={{ opacity: 0, scale: 0.9, y: 10 }}
-              exitStyle={{ opacity: 0, scale: 0.9, y: 10 }}
-              opacity={1}
-              scale={1}
-              y={0}
-              position="absolute"
-              b={60}
-              r={16}
-              z={1000}
-            >
-              <YStack
-                bg="$backgroundStrong"
-                rounded="$4"
-                p="$3"
-                shadowColor="$shadowColor"
-                shadowOpacity={0.15}
-                shadowRadius={8}
-                shadowOffset={{ width: 0, height: 4 }}
-                borderWidth={1}
-                borderColor="$borderColor"
-                gap="$2"
-                width={240}
-              >
-                <Text fontSize="$3" fontWeight="600" color="$color10" mb="$2">
-                  React with:
-                </Text>
-                <XStack flexWrap="wrap" gap="$2">
-                  {REACTION_EMOJIS.map(({ emoji, key }) => (
-                    <Pressable key={key} onPress={() => handleReact(emoji)}>
-                      <XStack
-                        px="$3"
-                        py="$2"
-                        rounded="$10"
-                        bg={emoji === userReaction ? "$accent" : "$color2"}
-                        borderWidth={1}
-                        borderColor={emoji === userReaction ? "$accentForeground" : "$borderColor"}
-                        pressStyle={{ scale: 1.1 }}
-                        animation="bouncy"
-                      >
-                        <Text fontSize="$5">{emoji}</Text>
-                      </XStack>
-                    </Pressable>
-                  ))}
-                </XStack>
-              </YStack>
-            </View>
-          </>
+          <ReactionPicker 
+            userReaction={userReaction}
+            onReact={handleReact}
+            onClose={closeReactionPicker}
+          />
         )}
       </AnimatePresence>
     </YStack>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison for memo
+  return (
+    prevProps.post.id === nextProps.post.id &&
+    prevProps.post.reactions === nextProps.post.reactions &&
+    prevProps.post.commentCount === nextProps.post.commentCount &&
+    prevProps.post.userReaction === nextProps.post.userReaction
+  );
+});
+
+PostCard.displayName = 'PostCard';

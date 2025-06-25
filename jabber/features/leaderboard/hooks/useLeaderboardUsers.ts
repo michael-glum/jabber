@@ -1,8 +1,9 @@
-// features/for-you/hooks/useForYouFeed.ts
+// features/leaderboard/hooks/useLeaderboardUsers.ts
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { FeedData } from "~/shared/components/feed/types";
 import { api } from '~/shared/services/api';
 import { User } from "~/shared/models/types";
+import { useMemo, useCallback } from "react";
 
 export function useLeaderboardUsers(
   type: 'trending' | 'allTime'
@@ -26,20 +27,34 @@ export function useLeaderboardUsers(
     staleTime: type === 'allTime' ? 1000 * 60 * 30 : 1000 * 60 * 5,
   });
 
-  const allUsers = data?.pages.flatMap(page => page) ?? [];
+  // Memoize flattened data
+  const allUsers = useMemo(() => 
+    data?.pages.flatMap(page => page) ?? [],
+    [data?.pages]
+  );
+
+  // Stable callbacks
+  const onRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['leaderboard', type] });
+    refetch();
+  }, [queryClient, refetch, type]);
+
+  const onEndReached = useCallback(() => {
+    if (hasNextPage && !isLoading) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isLoading, fetchNextPage]);
+
+  const keyExtractor = useCallback(
+    (user: User) => user.id,
+    []
+  );
 
   return {
     data: allUsers,
     isLoading,
-    onRefresh: () => {
-      queryClient.invalidateQueries({ queryKey: ['leaderboard', type] });
-      refetch();
-    },
-    onEndReached: () => {
-      if (hasNextPage && !isLoading) {
-        fetchNextPage();
-      }
-    },
-    keyExtractor: (user) => user.id,
+    onRefresh,
+    onEndReached,
+    keyExtractor,
   };
 }
