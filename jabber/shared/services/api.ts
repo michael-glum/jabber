@@ -45,6 +45,31 @@ const generateReactions = () => {
   return reactions;
 };
 
+// Generate boost level based on post type
+const generateBoostLevel = (type: string): number => {
+  if (type === 'mine') return 0; // User's own posts start unboosted
+  
+  const rand = Math.random();
+  switch (type) {
+    case 'allTime':
+      // High engagement posts likely had boosts
+      if (rand > 0.7) return Math.floor(Math.random() * 3) + 3; // 3-5
+      if (rand > 0.4) return Math.floor(Math.random() * 2) + 1; // 1-2
+      return 0;
+    case 'trending':
+      // Some boosted posts
+      if (rand > 0.8) return Math.floor(Math.random() * 3) + 2; // 2-4
+      if (rand > 0.6) return 1;
+      return 0;
+    case 'forYou':
+      // Occasional boosted posts
+      if (rand > 0.9) return Math.floor(Math.random() * 3) + 1; // 1-3
+      return 0;
+    default:
+      return 0;
+  }
+};
+
 export const api = {
   getPosts: async (type: 'forYou' | 'allTime' | 'trending' | 'mine' | 'reactions', page: number): Promise<Post[]> => {
     await new Promise((res) => setTimeout(res, 500));
@@ -79,6 +104,8 @@ export const api = {
           break;
       }
       
+      const boostLevel = generateBoostLevel(type);
+      
       return {
         id: `post-${type}-${page}-${i}`,
         text: generatePostText(),
@@ -90,6 +117,7 @@ export const api = {
         createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
         isLiked: Math.random() > 0.7,
         userReaction: Math.random() > 0.8 ? ['🔥', '💀', '😭'][Math.floor(Math.random() * 3)] : undefined,
+        boostLevel,
       };
     });
   },

@@ -1,8 +1,7 @@
 // shared/components/post/PostCard.tsx
 import React, { useState, useCallback, useMemo } from 'react';
-import { ScrollView, Pressable } from 'react-native';
 import { YStack, XStack, Text, AnimatePresence, View } from 'tamagui';
-import { MessageCircle, Trophy, Plus } from '@tamagui/lucide-icons';
+import { MessageCircle, Trophy, Plus, Zap } from '@tamagui/lucide-icons';
 import { Post } from '~/shared/models/types';
 
 interface PostCardProps {
@@ -10,6 +9,8 @@ interface PostCardProps {
   onReact?: (emoji: string) => void;
   onComment?: () => void;
 }
+
+// TODO: boost level only indicated (and included in memo) for user's own posts
 
 const REACTION_EMOJIS = [
   { emoji: '🔥', key: 'fire' },
@@ -47,33 +48,32 @@ const ReactionButton = React.memo(({
   isUserReaction: boolean; 
   onPress: () => void;
 }) => (
-  <Pressable onPress={onPress}>
-    <XStack
-      items="center"
-      gap="$1"
-      px="$2"
-      py="$1.5"
-      rounded="$8"
-      bg={isUserReaction ? "$yellow2" : "$backgroundStrong"}
-      borderWidth={1.5}
-      borderColor={isUserReaction ? "$yellow5" : "$borderColor"}
-      shadowColor="$shadowColor"
-      shadowOpacity={0.05}
-      shadowRadius={2}
-      shadowOffset={{ width: 0, height: 1 }}
-      pressStyle={{ scale: 0.9, opacity: 0.9 }}
-      animation="bouncy"
+  <XStack
+    onPress={onPress}
+    items="center"
+    gap="$1"
+    px="$2"
+    py="$1.5"
+    rounded="$8"
+    bg={isUserReaction ? "$yellow2" : "$backgroundStrong"}
+    borderWidth={1.5}
+    borderColor={isUserReaction ? "$yellow5" : "$borderColor"}
+    shadowColor="$shadowColor"
+    shadowOpacity={0.05}
+    shadowRadius={2}
+    shadowOffset={{ width: 0, height: 1 }}
+    pressStyle={{ scale: 0.9, opacity: 0.9 }}
+    animation="bouncy"
+  >
+    <Text fontSize="$3" color={isUserReaction ? "$yellow10" : "$color"}>{emoji}</Text>
+    <Text 
+      fontSize="$1" 
+      color={isUserReaction ? "$yellow10" : "$color10"} 
+      fontWeight="700"
     >
-      <Text fontSize="$3" color={isUserReaction ? "$yellow10" : "$color"}>{emoji}</Text>
-      <Text 
-        fontSize="$1" 
-        color={isUserReaction ? "$yellow10" : "$color10"} 
-        fontWeight="700"
-      >
-        {count}
-      </Text>
-    </XStack>
-  </Pressable>
+      {count}
+    </Text>
+  </XStack>
 ));
 
 const CommentButton = React.memo(({ 
@@ -83,14 +83,12 @@ const CommentButton = React.memo(({
   count: number; 
   onPress?: () => void;
 }) => (
-  <Pressable onPress={onPress}>
-    <XStack items="center" gap="$2" opacity={0.7} pressStyle={{ opacity: 0.5 }}>
-      <MessageCircle size={20} color="$color10"/>
-      <Text fontSize="$3" color="$color10">
-        {count}
-      </Text>
-    </XStack>
-  </Pressable>
+  <XStack onPress={onPress} items="center" gap="$2" opacity={0.7} pressStyle={{ opacity: 0.5 }}>
+    <MessageCircle size={20} color="$color10"/>
+    <Text fontSize="$3" color="$color10">
+      {count}
+    </Text>
+  </XStack>
 ));
 
 const ReactionPicker = React.memo(({ 
@@ -103,7 +101,7 @@ const ReactionPicker = React.memo(({
   onClose: () => void;
 }) => (
   <>
-    <Pressable 
+    <View 
       onPress={onClose}
       style={{
         position: 'absolute',
@@ -145,20 +143,20 @@ const ReactionPicker = React.memo(({
         </Text>
         <XStack flexWrap="wrap" gap="$2">
           {REACTION_EMOJIS.map(({ emoji, key }) => (
-            <Pressable key={key} onPress={() => onReact(emoji)}>
-              <XStack
-                px="$3"
-                py="$2"
-                rounded="$10"
-                bg={emoji === userReaction ? "$accent" : "$color2"}
-                borderWidth={1}
-                borderColor={emoji === userReaction ? "$accentForeground" : "$borderColor"}
-                pressStyle={{ scale: 1.1 }}
-                animation="bouncy"
-              >
-                <Text fontSize="$5">{emoji}</Text>
-              </XStack>
-            </Pressable>
+            <XStack
+              key={key}
+              onPress={() => onReact(emoji)}
+              px="$3"
+              py="$2"
+              rounded="$10"
+              bg={emoji === userReaction ? "$accent" : "$color2"}
+              borderWidth={1}
+              borderColor={emoji === userReaction ? "$accentForeground" : "$borderColor"}
+              pressStyle={{ scale: 1.1 }}
+              animation="bouncy"
+            >
+              <Text fontSize="$5">{emoji}</Text>
+            </XStack>
           ))}
         </XStack>
       </YStack>
@@ -212,21 +210,43 @@ export const PostCard = React.memo(({ post, onReact, onComment }: PostCardProps)
       my="$2"
       p="$4"
       gap="$3"
-      borderWidth={4}
-      borderColor="$blue4"
+      borderWidth={post.boostLevel && post.boostLevel > 0 ? 4 : 4}
+      borderColor={post.boostLevel && post.boostLevel > 0 ? "$yellow5" : "$blue4"}
       pressStyle={{ opacity: 0.9, scale: 0.9 }}
       animation="quick"
+      shadowColor={post.boostLevel && post.boostLevel > 0 ? "$yellow10" : "$shadowColor"}
+      shadowOpacity={post.boostLevel && post.boostLevel > 0 ? 0.2 : 0}
+      shadowRadius={post.boostLevel && post.boostLevel > 0 ? 8 : 0}
+      shadowOffset={{ width: 0, height: 2 }}
     >
       {/* Header with username and jabber score */}
       <XStack items="center" justify="space-between">
-        <Text
-          fontSize="$4"
-          fontWeight="600"
-          color="$color10"
-          textTransform="lowercase"
-        >
-          @{post.username}
-        </Text>
+        <XStack items="center" gap="$2">
+          <Text
+            fontSize="$4"
+            fontWeight="600"
+            color="$color10"
+            textTransform="lowercase"
+          >
+            @{post.username}
+          </Text>
+          {/* Boost indicator */}
+          {post.boostLevel !== undefined && post.boostLevel > 0 && (
+            <XStack 
+              items="center" 
+              gap="$1" 
+              bg="$yellow2" 
+              px="$2" 
+              py="$1" 
+              rounded="$10"
+            >
+              <Zap size={14} color="$yellow10" fill="$yellow10" />
+              <Text fontSize="$2" fontWeight="bold" color="$yellow10">
+                {post.boostLevel}x
+              </Text>
+            </XStack>
+          )}
+        </XStack>
         
         {/* Jabber Score */}
         <XStack items="center" gap="$1.5">
@@ -253,22 +273,21 @@ export const PostCard = React.memo(({ post, onReact, onComment }: PostCardProps)
         <CommentButton count={post.commentCount} onPress={onComment} />
 
         {/* Plus button */}
-        <Pressable onPress={toggleReactionPicker}>
-          <XStack
-            items="center"
-            justify="center"
-            width={36}
-            height={36}
-            rounded="$10"
-            bg={showReactionPicker ? "$color2" : "$backgroundStrong"}
-            borderWidth={1}
-            borderColor="$borderColor"
-            pressStyle={{ scale: 0.9 }}
-            animation="quick"
-          >
-            <Plus size={18} color="$color10" />
-          </XStack>
-        </Pressable>
+        <XStack
+          onPress={toggleReactionPicker}
+          items="center"
+          justify="center"
+          width={36}
+          height={36}
+          rounded="$10"
+          bg={showReactionPicker ? "$color2" : "$backgroundStrong"}
+          borderWidth={1}
+          borderColor="$borderColor"
+          pressStyle={{ scale: 0.9 }}
+          animation="quick"
+        >
+          <Plus size={18} color="$color10" />
+        </XStack>
       </XStack>
 
       {/* Reactions section - wrapped row */}
@@ -304,7 +323,8 @@ export const PostCard = React.memo(({ post, onReact, onComment }: PostCardProps)
     prevProps.post.id === nextProps.post.id &&
     prevProps.post.reactions === nextProps.post.reactions &&
     prevProps.post.commentCount === nextProps.post.commentCount &&
-    prevProps.post.userReaction === nextProps.post.userReaction
+    prevProps.post.userReaction === nextProps.post.userReaction &&
+    prevProps.post.boostLevel === nextProps.post.boostLevel
   );
 });
 

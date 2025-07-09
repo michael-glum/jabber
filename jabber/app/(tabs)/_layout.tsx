@@ -1,6 +1,6 @@
 import { Link, Tabs } from 'expo-router'
 import { Button, useTheme } from 'tamagui'
-import { Flame, HeartHandshake, Trophy, User } from '@tamagui/lucide-icons'
+import { Flame, HeartHandshake, Sparkles, Trophy, User } from '@tamagui/lucide-icons'
 
 export default function TabLayout() {
   const theme = useTheme()
@@ -34,6 +34,18 @@ export default function TabLayout() {
         options={{
           title: 'Hot',
           tabBarIcon: ({ color }) => <Flame color={color as any} />,
+        }}
+      />
+      <Tabs.Screen
+        name="add-post"
+        options={{
+          title: 'Add Post',
+          tabBarIcon: ({ color, focused }) =>
+            <Sparkles 
+              color={color as any} 
+              fill={focused ? color : 'transparent'}
+              size={28}
+            />,
         }}
       />
       <Tabs.Screen

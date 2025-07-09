@@ -10,6 +10,7 @@ export type Post = {
   createdAt: string;
   isLiked?: boolean;
   userReaction?: string;
+  boostLevel: number;
 }
 
 export type User = {
