@@ -5,9 +5,7 @@ import { FeedData } from "~/shared/components/feed/types";
 import { api } from '~/shared/services/api';
 import { Post } from "~/shared/models/types";
 import { useLocalPostStore } from "~/shared/store/postStore";
-import { useMemo, useCallback, useEffect } from "react";
-
-const MAX_PAGES_IN_MEMORY = 5;
+import { useMemo, useCallback } from "react";
 
 export function useForYouPosts(): FeedData<Post> {
   const queryClient = useQueryClient();
@@ -28,30 +26,12 @@ export function useForYouPosts(): FeedData<Post> {
       return pages.length;
     },
     initialPageParam: 0,
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
     refetchOnWindowFocus: false,
-    maxPages: MAX_PAGES_IN_MEMORY,
+    refetchOnMount: false, // Prevent refetch on mount
+    refetchOnReconnect: false,
   });
-
-  // Manual cleanup of old pages when we have too many
-  useEffect(() => {
-    if (data?.pages && data.pages.length > MAX_PAGES_IN_MEMORY) {
-      const currentData = queryClient.getQueryData<InfiniteData<Post[]>>(['posts', 'for-you']);
-      
-      if (currentData) {
-        // Keep only the most recent pages
-        const recentPages = currentData.pages.slice(-MAX_PAGES_IN_MEMORY);
-        const recentPageParams = currentData.pageParams.slice(-MAX_PAGES_IN_MEMORY);
-        
-        // Update the cache with limited data
-        queryClient.setQueryData<InfiniteData<Post[]>>(['posts', 'for-you'], {
-          pages: recentPages,
-          pageParams: recentPageParams,
-        });
-      }
-    }
-  }, [data?.pages?.length, queryClient]);
 
   // Memoize flattened data
   const allPosts = useMemo(() => 
@@ -62,8 +42,9 @@ export function useForYouPosts(): FeedData<Post> {
   // Stable callbacks
   const onRefresh = useCallback(() => {
     setLocalNewPost(null);
-    queryClient.removeQueries({ queryKey: ['posts', 'forYou'] });
-    queryClient.invalidateQueries({ queryKey: ['posts', 'forYou'] });
+    // Clear cache and refetch
+    api.clearCache();
+    queryClient.invalidateQueries({ queryKey: ['posts', 'for-you'] });
     refetch();
   }, [queryClient, refetch, setLocalNewPost]);
 

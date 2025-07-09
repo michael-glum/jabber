@@ -12,28 +12,43 @@ import { Post } from '~/shared/models/types'
 const HeaderRight = React.memo(() => <JabberScore />)
 
 export default function HotScreen() {
-  // Stable render function
-  const renderPost = useCallback((post: Post) => (
-    <PostCard
-      key={post.id}
-      post={post}
-      onReact={(emoji) => console.log('Reacted with:', emoji)}
-      onComment={() => console.log('Commented on post:', post.id)}
-    />
-  ), [])
+  // Stable render function with callbacks
+  const renderPost = useCallback((post: Post) => {
+    const handleReact = (emoji: string) => {
+      console.log('Reacted with:', emoji, 'on post:', post.id)
+    }
+
+    const handleComment = () => {
+      console.log('Comment on post:', post.id)
+    }
+
+    const handleVote = (type: 'up' | 'down') => {
+      console.log('Voted', type, 'on post:', post.id)
+    }
+
+    return (
+      <PostCard
+        key={post.id}
+        post={post}
+        onReact={handleReact}
+        onComment={handleComment}
+        onVote={handleVote}
+      />
+    )
+  }, [])
 
   return (
     <Screen>
       <Header 
-        title="Hot" 
+        title="hot" 
         rightComponent={<HeaderRight />}
       />
       <YStack flex={1} bg="$background">
         <Feed
-          tabNames={['Trending', 'All Time'] as const}
+          tabNames={['trending', 'all time'] as const}
           dataHookMap={{
-            'Trending': () => useHotPosts('trending'),
-            'All Time': () => useHotPosts('allTime'),
+            'trending': () => useHotPosts('trending'),
+            'all time': () => useHotPosts('allTime'),
           }}
           renderItem={renderPost}
         />

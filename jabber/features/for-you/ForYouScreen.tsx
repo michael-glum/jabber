@@ -1,5 +1,6 @@
+// features/for-you/ForYouScreen.tsx
 import React, { useCallback } from 'react'
-import { Text, YStack } from 'tamagui'
+import { YStack } from 'tamagui'
 import { Feed } from '~/shared/components/feed/Feed'
 import { Screen } from '~/shared/components/ui/Screen'
 import { useForYouPosts } from './hooks/useForYouPosts'
@@ -15,20 +16,38 @@ const HeaderRight = React.memo(() => <JabberScore />)
 export default function ForYouScreen() {
   const localNewPost = useLocalPostStore((state) => state.localNewPost)
 
-  // Stable render function
-  const renderPost = useCallback((post: Post) => (
-    <PostCard
-      key={post.id}
-      post={post}
-      onReact={(emoji) => console.log('Reacted with:', emoji)}
-      onComment={() => console.log('Commented on post:', post.id)}
-    />
-  ), [])
+  // Stable render function with proper callbacks
+  const renderPost = useCallback((post: Post) => {
+    const handleReact = (emoji: string) => {
+      // TODO: Implement reaction logic
+      console.log('Reacted with:', emoji, 'on post:', post.id)
+    }
+
+    const handleComment = () => {
+      // TODO: Navigate to comments
+      console.log('Comment on post:', post.id)
+    }
+
+    const handleVote = (type: 'up' | 'down') => {
+      // TODO: Implement voting logic
+      console.log('Voted', type, 'on post:', post.id)
+    }
+
+    return (
+      <PostCard
+        key={post.id}
+        post={post}
+        onReact={handleReact}
+        onComment={handleComment}
+        onVote={handleVote}
+      />
+    )
+  }, [])
 
   return (
     <Screen>
       <Header 
-        title="Jabber" 
+        title="jabber" 
         rightComponent={<HeaderRight />}
       />
       <YStack flex={1} bg="$background">

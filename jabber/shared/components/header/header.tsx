@@ -1,4 +1,6 @@
-import { Text, XStack } from 'tamagui'
+// shared/components/header/header.tsx
+import { Text, XStack, View } from 'tamagui'
+import { LinearGradient } from 'tamagui/linear-gradient'
 
 interface HeaderProps {
   title: string
@@ -9,28 +11,36 @@ interface HeaderProps {
 export default function Header({ title, leftComponent, rightComponent }: HeaderProps) {
   return (
     <XStack
-      height="$6"
+      height={60}
       px="$4"
       items="center"
       justify="space-between"
-      borderBottomWidth={1}
+      borderBottomWidth={2}
       borderColor="$borderColor"
-      bg="$background"
+      bg="$backgroundStrong"
     >
       {/* Left section */}
-      <XStack width="$6" items="center">
+      <View width={80} items="flex-start">
         {leftComponent}
-      </XStack>
+      </View>
       
-      {/* Center title */}
-      <Text fontSize="$6" fontWeight="bold" color="$color">
-        {title}
-      </Text>
+      {/* Center title with gradient text effect */}
+      <View flex={1} items="center">
+        <Text 
+          fontSize="$7" 
+          fontWeight="800" 
+          color="$accent"
+          textTransform="lowercase"
+          letterSpacing={-1}
+        >
+          {title}
+        </Text>
+      </View>
       
       {/* Right section */}
-      <XStack width="$6" items="center" justify="flex-end">
+      <View width={80} items="flex-end">
         {rightComponent}
-      </XStack>
+      </View>
     </XStack>
   )
 }

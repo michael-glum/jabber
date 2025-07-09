@@ -1,127 +1,204 @@
 // features/add-post/AddPostScreen.tsx
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
-import { TextInput, Keyboard, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
-import { YStack, XStack, Text, View, AnimatePresence, Button } from 'tamagui'
-import { Sparkles, Zap, Send, X, Plus, Minus } from '@tamagui/lucide-icons'
+import { TextInput, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Animated } from 'react-native'
+import { YStack, XStack, Text, View, Button } from 'tamagui'
+import { Sparkles, Zap, Send, X, Plus, Minus, Flame, TrendingUp } from '@tamagui/lucide-icons'
 import { Screen } from '~/shared/components/ui/Screen'
 import Header from '~/shared/components/header/header'
 import { useLocalPostStore } from '~/shared/store/postStore'
 import { useCurrentUser } from '~/shared/hooks/useCurrentUser'
 import { Post } from '~/shared/models/types'
 import { useRouter } from 'expo-router'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const MAX_CHARS = 140
 const MAX_BOOSTS = 10
 
 const PLACEHOLDER_TEXTS = [
-  "spill your chaotic thoughts...",
-  "what's unhinged today?",
-  "drop a hot take...",
-  "share your brain rot...",
-  "unleash the chaos...",
-  "what's the vibe?",
-  "speak your truth bestie...",
-  "go off queen/king...",
-  "let it out...",
-  "what's brewing in that brain?",
-]
+  "what's the tea? ☕",
+  "drop your chaos here...",
+  "brain dump incoming...",
+  "thoughts? share 'em",
+  "type your masterpiece...",
+  "let's hear it bestie",
+  "go off, i'm listening...",
+  "your stage, your mic 🎤",
+];
 
-const BOOST_MESSAGES = [
-  "no boost? bold move",
-  "one boost = subtle chaos",
-  "double boost = now we're talking",
-  "triple threat activated 🔥",
-  "quad damage incoming!!!",
-  "MAXIMUM CHAOS 🚀",
-  "UNSTOPPABLE FORCE 💥",
-  "LEGENDARY STATUS 🌟",
-  "MYTHIC LEVEL POWER ⚡",
-  "GOD MODE ACTIVATED 👑",
-  "welp, this better be good",
-]
-
-const BoostCounter = React.memo(({ 
-  boostLevel, 
-  onIncrement, 
-  onDecrement 
+// Animated character counter
+const CharacterCounter = React.memo(({ 
+  current, 
+  max 
 }: { 
-  boostLevel: number; 
-  onIncrement: () => void;
-  onDecrement: () => void;
+  current: number; 
+  max: number;
 }) => {
-  const getBoostEmoji = () => {
-    if (boostLevel === 0) return '😴'
-    if (boostLevel <= 2) return '⚡'
-    if (boostLevel <= 4) return '🔥'
-    if (boostLevel <= 6) return '🚀'
-    if (boostLevel <= 8) return '💥'
-    return '🌟'
-  }
+  const left = max - current;
+  const percentage = (current / max) * 100;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (left < 20 && left >= 0) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [left]);
+
+  const getColor = () => {
+    if (left < 0) return '$red10';
+    if (left < 20) return '$yellow10';
+    return '$accent';
+  };
 
   return (
-    <XStack 
-      bg="$backgroundStrong"
-      borderWidth={2}
-      borderColor="$borderColor"
-      rounded="$4"
-      p="$4"
-      items="center"
-      justify="space-between"
-      gap="$3"
-    >
-      <XStack items="center" gap="$3" flex={1}>
-        <Text fontSize="$8">{getBoostEmoji()}</Text>
-        <YStack flex={1}>
-          <Text fontSize="$6" fontWeight="bold" color="$color">
-            {boostLevel}x boost
+    <YStack gap="$2">
+      <View 
+        height={6} 
+        bg="$color2" 
+        rounded="$10" 
+        overflow="hidden"
+      >
+        <View 
+          height="100%" 
+          width={`${Math.min(percentage, 100)}%`}
+          bg={getColor()}
+          animation="quick"
+        />
+      </View>
+      <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+        <Text 
+          fontSize="$3" 
+          fontWeight="bold" 
+          color={getColor()}
+          text="center"
+        >
+          {left}
+        </Text>
+      </Animated.View>
+    </YStack>
+  );
+});
+
+// Beautiful boost selector
+const BoostSelector = React.memo(({ 
+  level, 
+  onChange 
+}: { 
+  level: number; 
+  onChange: (level: number) => void;
+}) => {
+  const getBoostColor = (lvl: number) => {
+    if (lvl === 0) return '$color10';
+    if (lvl <= 3) return '$yellow10';
+    if (lvl <= 6) return '$red10';
+    return '$red10';
+  };
+
+  const getBoostEmoji = (lvl: number) => {
+    if (lvl === 0) return '😴';
+    if (lvl <= 2) return '⚡';
+    if (lvl <= 4) return '🔥';
+    if (lvl <= 6) return '🚀';
+    if (lvl <= 8) return '💥';
+    return '🌟';
+  };
+
+  return (
+    <YStack gap="$3">
+      <XStack items="center" justify="space-between">
+        <XStack items="center" gap="$2">
+          <Zap size={20} color="$yellow10" fill="$yellow10" />
+          <Text fontSize="$5" fontWeight="bold">
+            boost power
           </Text>
-          <Text fontSize="$3" color="$color10">
-            {BOOST_MESSAGES[Math.min(boostLevel, BOOST_MESSAGES.length - 1)]}
+        </XStack>
+        <XStack items="center" gap="$2" bg="$color2" px="$3" py="$1" rounded="$10">
+          <Text fontSize="$6">{getBoostEmoji(level)}</Text>
+          <Text fontSize="$4" fontWeight="bold" color={getBoostColor(level)}>
+            {level}x
           </Text>
-        </YStack>
+        </XStack>
       </XStack>
-      
-      <XStack items="center" gap="$1">
+
+      {/* Boost level slider */}
+      <XStack items="center" gap="$2">
         <Button
           size="$2.5"
           circular
-          bg={boostLevel > 0 ? "$color2" : "$color1"}
-          borderColor="$borderColor"
-          borderWidth={1}
-          opacity={boostLevel > 0 ? 1 : 0.5}
-          disabled={boostLevel <= 0}
-          onPress={onDecrement}
-          pressStyle={{ scale: 0.95 }}
+          bg="$color2"
+          disabled={level <= 0}
+          onPress={() => onChange(Math.max(0, level - 1))}
+          pressStyle={{ scale: 0.9 }}
           animation="quick"
         >
-          <Minus size={15} color="$color" />
+          <Minus size={16} />
         </Button>
-        
-        <View width={26} items="center">
-          <Text fontSize="$6" fontWeight="bold" color="$accent">
-            {boostLevel}
-          </Text>
+
+        <View flex={1} height={40} justify="center">
+          <View height={8} bg="$color2" rounded="$10" overflow="hidden">
+            <View 
+              height="100%" 
+              width={`${(level / MAX_BOOSTS) * 100}%`}
+              bg={getBoostColor(level)}
+              animation="quick"
+            />
+          </View>
+          
+          {/* Boost level dots */}
+          <XStack position="absolute" width="100%" justify="space-between" px="$2">
+            {Array.from({ length: 11 }, (_, i) => (
+              <View
+                key={i}
+                width={12}
+                height={12}
+                rounded="$10"
+                bg={i <= level ? getBoostColor(level) : '$color3'}
+                animation="quick"
+                scale={i === level ? 1.3 : 1}
+              />
+            ))}
+          </XStack>
         </View>
-        
+
         <Button
           size="$2.5"
           circular
-          bg={boostLevel < MAX_BOOSTS ? "$accent" : "$color1"}
-          borderColor="$borderColor"
-          borderWidth={1}
-          opacity={boostLevel < MAX_BOOSTS ? 1 : 0.5}
-          disabled={boostLevel >= MAX_BOOSTS}
-          onPress={onIncrement}
-          pressStyle={{ scale: 0.95 }}
+          bg="$accent"
+          disabled={level >= MAX_BOOSTS}
+          onPress={() => onChange(Math.min(MAX_BOOSTS, level + 1))}
+          pressStyle={{ scale: 0.9 }}
           animation="quick"
         >
-          <Plus size={15} color={boostLevel < MAX_BOOSTS ? "white" : "$color"} />
+          <Plus size={16} color="white" />
         </Button>
       </XStack>
-    </XStack>
-  )
-})
+
+      {/* Boost info */}
+      <XStack bg="$color1" p="$3" rounded="$4" items="center" gap="$2">
+        <TrendingUp size={16} color={getBoostColor(level)} />
+        <Text fontSize="$2" color="$color10" flex={1}>
+          {level === 0 && "no boost = organic reach"}
+          {level > 0 && level <= 3 && "small boost = more eyes on your post"}
+          {level > 3 && level <= 6 && "medium boost = trending potential"}
+          {level > 6 && "mega boost = maximum chaos"}
+        </Text>
+      </XStack>
+    </YStack>
+  );
+});
 
 export default function AddPostScreen() {
   const router = useRouter()
@@ -147,14 +224,6 @@ export default function AddPostScreen() {
   }, [])
 
   const charactersLeft = MAX_CHARS - postText.length
-  const characterPercentage = (postText.length / MAX_CHARS) * 100
-
-  const getCharacterColor = () => {
-    if (charactersLeft < 0) return '$red10'
-    if (charactersLeft < 20) return '$yellow10'
-    return '$color10'
-  }
-
   const canPost = postText.trim().length > 0 && charactersLeft >= 0 && !isPosting
 
   const handlePost = useCallback(async () => {
@@ -172,16 +241,18 @@ export default function AddPostScreen() {
       reactions: {},
       commentCount: 0,
       createdAt: new Date().toISOString(),
-      boostLevel, // Add boost level to post
+      boostLevel,
+      upvotes: 0,
+      downvotes: 0,
     }
     
     // Add to local store
     setLocalNewPost(newPost)
     
     // Simulate posting delay
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, 300))
     
-    // Navigate to for-you feed
+    // Navigate back
     router.replace('/(tabs)/for-you')
     
     // Reset form
@@ -189,22 +260,6 @@ export default function AddPostScreen() {
     setBoostLevel(0)
     setIsPosting(false)
   }, [canPost, postText, boostLevel, currentUser, setLocalNewPost, router])
-
-  const handleTextChange = useCallback((text: string) => {
-    setPostText(text)
-  }, [])
-
-  const handleBoostIncrement = useCallback(() => {
-    if (boostLevel < MAX_BOOSTS) {
-      setBoostLevel(boostLevel + 1)
-    }
-  }, [boostLevel])
-
-  const handleBoostDecrement = useCallback(() => {
-    if (boostLevel > 0) {
-      setBoostLevel(boostLevel - 1)
-    }
-  }, [boostLevel])
 
   return (
     <Screen>
@@ -237,100 +292,63 @@ export default function AddPostScreen() {
             <YStack 
               flex={1} 
               bg="$backgroundStrong" 
-              rounded="$4" 
+              rounded="$6" 
               p="$4"
               borderWidth={2}
-              borderColor="$borderColor"
+              borderColor={postText.length > 0 ? "$accent" : "$borderColor"}
               gap="$3"
+              animation="quick"
             >
               <TextInput
                 ref={textInputRef}
                 value={postText}
-                onChangeText={handleTextChange}
+                onChangeText={setPostText}
                 placeholder={placeholder}
                 placeholderTextColor="#71717A"
                 multiline
                 style={{
                   fontSize: 20,
                   lineHeight: 28,
-                  color: '$color',
-                  minHeight: 120,
+                  color: '#FAFAFA',
+                  minHeight: 150,
                   textAlignVertical: 'top',
                   fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
                 }}
-                maxLength={MAX_CHARS + 20} // Allow over-typing to show error
+                maxLength={MAX_CHARS + 20} // Allow over-typing
               />
             </YStack>
 
-            {/* Character Count - Moved outside text input */}
-            <XStack items="center" justify="space-between">
-              <View 
-                height={4} 
-                flex={1} 
-                bg="$color2" 
-                rounded="$10" 
-                overflow="hidden"
-                mr="$3"
-              >
-                <View 
-                  height="100%" 
-                  width={`${Math.min(characterPercentage, 100)}%`}
-                  bg={charactersLeft < 0 ? '$red10' : charactersLeft < 20 ? '$yellow10' : '$accent'}
-                  animation="quick"
-                />
-              </View>
-              <Text 
-                fontSize="$3" 
-                fontWeight="bold" 
-                color={getCharacterColor()}
-              >
-                {charactersLeft}
-              </Text>
-            </XStack>
+            {/* Character Counter */}
+            <CharacterCounter current={postText.length} max={MAX_CHARS} />
 
-            {/* Boost Counter */}
-            <YStack gap="$3">
-              <XStack items="center" gap="$2">
-                <Zap size={20} color="$yellow10" fill="$yellow10" />
-                <Text fontSize="$5" fontWeight="bold">
-                  boost your post
-                </Text>
-              </XStack>
-              
-              <BoostCounter
-                boostLevel={boostLevel}
-                onIncrement={handleBoostIncrement}
-                onDecrement={handleBoostDecrement}
-              />
-            </YStack>
+            {/* Boost Selector */}
+            <BoostSelector level={boostLevel} onChange={setBoostLevel} />
 
             {/* Post Button */}
             <Button
               size="$5"
               bg={canPost ? "$accent" : "$color2"}
-              color={canPost ? "$accentForeground" : "$color10"}
-              rounded="$4"
-              py="$3"
-              px="$4"
+              rounded="$6"
               disabled={!canPost}
               onPress={handlePost}
-              pressStyle={{ scale: 0.97 }}
+              pressStyle={{ scale: 0.96 }}
               animation="bouncy"
               opacity={canPost ? 1 : 0.5}
             >
               <XStack items="center" gap="$3">
+                {isPosting ? (
+                  <Sparkles size={24} color="white" animation="quick" rotate="360deg" />
+                ) : (
+                  <Send size={24} color={canPost ? "white" : "$color10"} />
+                )}
                 <Text 
                   fontSize="$6" 
                   fontWeight="bold" 
                   color={canPost ? "white" : "$color10"}
                   textTransform="lowercase"
                 >
-                  {isPosting ? 'posting...' : 'send it'}
+                  {isPosting ? 'sending...' : 'send it'}
                 </Text>
-                <Send 
-                  size={24} 
-                  color={canPost ? "white" : "$color10"}
-                />
               </XStack>
             </Button>
           </YStack>

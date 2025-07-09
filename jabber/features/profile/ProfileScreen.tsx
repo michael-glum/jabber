@@ -1,6 +1,6 @@
 // features/profile/ProfileScreen.tsx
 import React, { useCallback } from 'react';
-import { YStack, Text, XStack } from 'tamagui';
+import { YStack, Text, XStack, View, AnimatePresence } from 'tamagui';
 import { Feed } from '~/shared/components/feed/Feed';
 import { useProfilePosts } from './hooks/useProfilePosts';
 import { useLocalPostStore } from '~/shared/store/postStore';
@@ -8,42 +8,131 @@ import { Screen } from '~/shared/components/ui/Screen';
 import { useCurrentUser } from '~/shared/hooks/useCurrentUser';
 import JabberScore from '~/shared/components/jabberscore/jabberscore';
 import Header from '~/shared/components/header/header';
-import { MapPin, Trophy } from '@tamagui/lucide-icons';
+import { MapPin, Trophy, Flame, Star, Zap } from '@tamagui/lucide-icons';
 import { PostCard } from '~/shared/components/post/PostCard';
 import { Post } from '~/shared/models/types';
 
 const HeaderRight = React.memo(() => <JabberScore />)
 
-// Memoized profile header component
+// Gamified profile header
 const ProfileHeader = React.memo(({ user }: { user: any }) => (
   <YStack 
-    bg="$background" 
+    bg="$backgroundStrong" 
     borderBottomWidth={2} 
     borderColor="$borderColor"
     p="$4"
-    gap="$3"
+    gap="$4"
   >
-    <YStack gap="$2">
-      <Text fontSize="$7" fontWeight="bold" textTransform="lowercase">
-        @{user?.username || 'loading...'}
-      </Text>
-      
-      <XStack items="center" gap="$4">
-        <XStack items="center" gap="$1">
-          <MapPin size={16} color="$color10" />
-          <Text fontSize="$3" color="$color10">
-            {user?.region || '...'}
+    {/* Main user info */}
+    <YStack gap="$3">
+      <XStack items="center" justify="space-between">
+        <YStack gap="$1">
+          <Text fontSize="$7" fontWeight="bold" textTransform="lowercase">
+            @{user?.username || 'loading...'}
           </Text>
-        </XStack>
-        
-        <XStack items="center" gap="$2">
-          <Trophy size={20} color="$yellow10" />
-          <Text fontSize="$5" fontWeight="bold" color="$yellow10">
-            {user?.jabberScore?.toLocaleString() || '...'}
+          
+          <XStack items="center" gap="$2">
+            <MapPin size={16} color="$color10" />
+            <Text fontSize="$3" color="$color10">
+              {user?.region || '...'}
+            </Text>
+          </XStack>
+        </YStack>
+
+        {/* Level badge */}
+        {user?.level && (
+          <YStack items="center" gap="$1">
+            <View 
+              bg="$accent" 
+              width={60} 
+              height={60} 
+              rounded="$10" 
+              items="center" 
+              justify="center"
+              animation="bouncy"
+              enterStyle={{ scale: 0 }}
+              scale={1}
+            >
+              <Text fontSize="$7" fontWeight="bold" color="white">
+                {user.level}
+              </Text>
+            </View>
+            <Text fontSize="$2" color="$color10" fontWeight="600">
+              LEVEL
+            </Text>
+          </YStack>
+        )}
+      </XStack>
+
+      {/* Stats row */}
+      <XStack gap="$3" justify="space-around" pt="$2">
+        {/* Jabber Score */}
+        <YStack items="center" gap="$1" flex={1}>
+          <XStack items="center" gap="$2">
+            <Trophy size={24} color="$yellow10" fill="$yellow10" />
+            <Text fontSize="$6" fontWeight="bold" color="$yellow10">
+              {user?.jabberScore?.toLocaleString() || '...'}
+            </Text>
+          </XStack>
+          <Text fontSize="$2" color="$color10" textTransform="uppercase">
+            score
           </Text>
-        </XStack>
+        </YStack>
+
+        {/* Streak */}
+        {user?.streak && user.streak > 0 && (
+          <YStack items="center" gap="$1" flex={1}>
+            <XStack items="center" gap="$2">
+              <Flame size={24} color="$red10" fill="$red10" />
+              <Text fontSize="$6" fontWeight="bold" color="$red10">
+                {user.streak}
+              </Text>
+            </XStack>
+            <Text fontSize="$2" color="$color10" textTransform="uppercase">
+              streak
+            </Text>
+          </YStack>
+        )}
+
+        {/* Badges */}
+        {user?.badges && user.badges.length > 0 && (
+          <YStack items="center" gap="$1" flex={1}>
+            <XStack gap="$1">
+              {user.badges.slice(0, 3).map((badge: string, i: number) => (
+                <Text key={i} fontSize="$6">
+                  {badge}
+                </Text>
+              ))}
+            </XStack>
+            <Text fontSize="$2" color="$color10" textTransform="uppercase">
+              badges
+            </Text>
+          </YStack>
+        )}
       </XStack>
     </YStack>
+
+    {/* Progress to next level */}
+    {user?.level && (
+      <YStack gap="$2">
+        <XStack items="center" justify="space-between">
+          <Text fontSize="$3" color="$color10">
+            Progress to Level {user.level + 1}
+          </Text>
+          <Text fontSize="$3" fontWeight="bold" color="$accent">
+            65%
+          </Text>
+        </XStack>
+        <View height={8} bg="$color2" rounded="$10" overflow="hidden">
+          <View 
+            height="100%" 
+            width="65%" 
+            bg="$accent"
+            animation="quick"
+          />
+        </View>
+      </YStack>
+    )}
   </YStack>
 ));
 
@@ -51,20 +140,35 @@ export default function ProfileScreen() {
   const localNewPost = useLocalPostStore((s) => s.localNewPost);
   const { data: currentUser } = useCurrentUser();
 
-  // Stable render function
-  const renderPost = useCallback((post: Post) => (
-    <PostCard
-      key={post.id}
-      post={post}
-      onReact={(emoji) => console.log('Reacted with:', emoji)}
-      onComment={() => console.log('Comment on own post:', post.id)}
-    />
-  ), []);
+  // Stable render function with callbacks
+  const renderPost = useCallback((post: Post) => {
+    const handleReact = (emoji: string) => {
+      console.log('Reacted with:', emoji, 'on post:', post.id)
+    }
+
+    const handleComment = () => {
+      console.log('Comment on own post:', post.id)
+    }
+
+    const handleVote = (type: 'up' | 'down') => {
+      console.log('Voted', type, 'on post:', post.id)
+    }
+
+    return (
+      <PostCard
+        key={post.id}
+        post={post}
+        onReact={handleReact}
+        onComment={handleComment}
+        onVote={handleVote}
+      />
+    )
+  }, []);
 
   return (
     <Screen>
       <Header
-        title={currentUser?.username || 'Profile'}
+        title="profile"
         rightComponent={<HeaderRight />}
       />
 
@@ -72,13 +176,13 @@ export default function ProfileScreen() {
       
       <YStack flex={1} bg="$background">
         <Feed
-          tabNames={['Posts', 'Reactions'] as const}
+          tabNames={['posts', 'reactions'] as const}
           dataHookMap={{
-            Posts: () => useProfilePosts('mine'),
-            Reactions: () => useProfilePosts('reactions'),
+            posts: () => useProfilePosts('mine'),
+            reactions: () => useProfilePosts('reactions'),
           }}
           renderItem={renderPost}
-          localNewItem={localNewPost} // only shown on Posts tab
+          localNewItem={localNewPost}
         />
       </YStack>
     </Screen>
