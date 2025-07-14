@@ -34,6 +34,17 @@ const POST_TEXT_POOL = [
 
 const REGIONS = ['USA', 'Canada', 'UK', 'Australia', 'Germany', 'Japan', 'Brazil', 'Mexico'];
 
+// Sample titles for users
+const TITLES = [
+  'Vibe Master', 'Chaos Wizard', 'Based Demon', 'Cursed Angel', 'Blessed Void',
+  'Sleepy Bean', 'Caffeinated Noodle', 'Cryptid Creature', 'Brain Rot King',
+  'Touch Grass Pls', 'No Thoughts Head Empty', 'Anxiety Gremlin', 'Depression Demon',
+  'Serotonin Thief', 'Dopamine Dealer', 'ADHD Energy', 'Vibing Ghost', 'Feral Cat',
+  'Unhinged Wizard', 'Chaotic Goblin'
+];
+
+
+
 // Pre-generate reaction patterns for consistency
 const REACTION_PATTERNS: Record<string, number>[] = [
   { '🔥': 523, '💀': 234, '😭': 189 },
@@ -57,42 +68,35 @@ const generatePostData = (type: string, index: number): Partial<Post> => {
   const seed = type.charCodeAt(0) + index;
   const random = seededRandom(seed);
   
-  let baseUpvotes = 0;
-  let baseDownvotes = 0;
+  let baseLikes = 0;
   let multiplier = 1;
   
   switch (type) {
     case 'allTime':
-      baseUpvotes = 5000;
-      baseDownvotes = 500;
+      baseLikes = 5000;
       multiplier = 3;
       break;
     case 'trending':
-      baseUpvotes = 2000;
-      baseDownvotes = 200;
+      baseLikes = 2000;
       multiplier = 2;
       break;
     case 'forYou':
-      baseUpvotes = 100;
-      baseDownvotes = 20;
+      baseLikes = 100;
       multiplier = 1;
       break;
     default:
-      baseUpvotes = 50;
-      baseDownvotes = 10;
+      baseLikes = 50;
       break;
   }
   
-  const upvotes = Math.floor(baseUpvotes * (0.5 + random * multiplier));
-  const downvotes = Math.floor(baseDownvotes * (0.5 + random * 0.5));
+  const likes = Math.floor(baseLikes * (0.5 + random * multiplier));
   const boostLevel = random > 0.8 ? Math.floor(random * 5) + 1 : 0;
   
   return {
-    upvotes,
-    downvotes,
+    likes,
     boostLevel,
     reactions: REACTION_PATTERNS[Math.floor(random * REACTION_PATTERNS.length)],
-    userVote: random > 0.7 ? (random > 0.85 ? 'up' : 'down') : null,
+    isLiked: random > 0.7,
   };
 };
 
@@ -118,21 +122,22 @@ export const api = {
       
       const postData = generatePostData(type, postIndex);
       
+      const userSeed = seed * 3;
+      const userTitle = TITLES[userSeed % TITLES.length];
+      
       return {
         id: `post-${type}-${page}-${i}`,
         text: POST_TEXT_POOL[postIndex % POST_TEXT_POOL.length],
         username: isMine ? 'chaos_wizard420' : USERNAME_POOL[seed % USERNAME_POOL.length],
         userId: isMine ? currentUserId : `user-${page}-${i}`,
-        likes: 0, // deprecated, using upvotes/downvotes now
+        userTitle: isMine ? 'Chaos Wizard' : userTitle,
+        likes: postData.likes || 0,
         reactions: postData.reactions || {},
         commentCount: Math.floor(seededRandom(seed * 2) * 50),
         createdAt: new Date(Date.now() - postIndex * 60 * 60 * 1000).toISOString(),
-        isLiked: seededRandom(seed * 3) > 0.7,
+        isLiked: postData.isLiked || false,
         userReaction: seededRandom(seed * 4) > 0.8 ? ['🔥', '💀', '😭'][Math.floor(seededRandom(seed * 5) * 3)] : undefined,
         boostLevel: postData.boostLevel || 0,
-        upvotes: postData.upvotes || 0,
-        downvotes: postData.downvotes || 0,
-        userVote: postData.userVote,
       };
     });
     
@@ -169,7 +174,6 @@ export const api = {
         jabberScore: Math.max(baseScore - rank * 10, 100) + Math.floor(seededRandom(seed) * 50),
         level: Math.max(1, Math.floor((baseScore - rank * 10) / 1000)),
         streak: Math.floor(seededRandom(seed * 2) * 30),
-        badges: rank <= 10 ? ['🏆', '⚡', '🔥'] : rank <= 50 ? ['⭐'] : [],
       };
     });
     
@@ -209,7 +213,7 @@ export const api = {
       jabberScore: 4269,
       level: 12,
       streak: 7,
-      badges: ['🔥', '👑', '💯'],
+      title: 'Chaos Wizard',
     };
     
     dataCache.set('current-user', user);
@@ -219,5 +223,46 @@ export const api = {
   // Clear cache method for refresh
   clearCache: () => {
     dataCache.clear();
+  },
+
+  // Post interaction methods
+  likePost: async (postId: string): Promise<void> => {
+    await new Promise((res) => setTimeout(res, 100));
+    console.log('Liked post:', postId);
+    // In a real app, this would make an API call to like the post
+  },
+
+  unlikePost: async (postId: string): Promise<void> => {
+    await new Promise((res) => setTimeout(res, 100));
+    console.log('Unliked post:', postId);
+    // In a real app, this would make an API call to unlike the post
+  },
+
+  reactToPost: async (postId: string, emoji: string): Promise<void> => {
+    await new Promise((res) => setTimeout(res, 100));
+    console.log('Reacted to post:', postId, 'with emoji:', emoji);
+    // In a real app, this would make an API call to react to the post
+  },
+
+  removeReaction: async (postId: string): Promise<void> => {
+    await new Promise((res) => setTimeout(res, 100));
+    console.log('Removed reaction from post:', postId);
+    // In a real app, this would make an API call to remove the reaction
+  },
+
+  addComment: async (postId: string, text: string): Promise<Comment> => {
+    await new Promise((res) => setTimeout(res, 200));
+    console.log('Added comment to post:', postId, 'text:', text);
+    
+    const newComment: Comment = {
+      id: `comment-${postId}-${Date.now()}`,
+      postId,
+      text,
+      author: 'chaos_wizard420', // Current user
+      userId: 'current-user',
+      createdAt: new Date().toISOString(),
+    };
+    
+    return newComment;
   },
 };

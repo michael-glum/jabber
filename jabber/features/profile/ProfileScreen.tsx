@@ -8,7 +8,7 @@ import { Screen } from '~/shared/components/ui/Screen';
 import { useCurrentUser } from '~/shared/hooks/useCurrentUser';
 import JabberScore from '~/shared/components/jabberscore/jabberscore';
 import Header from '~/shared/components/header/header';
-import { MapPin, Trophy, Flame, Star, Zap } from '@tamagui/lucide-icons';
+import { MapPin, Trophy, Flame, ShoppingBag, Star } from '@tamagui/lucide-icons';
 import { PostCard } from '~/shared/components/post/PostCard';
 import { Post } from '~/shared/models/types';
 
@@ -39,29 +39,13 @@ const ProfileHeader = React.memo(({ user }: { user: any }) => (
           </XStack>
         </YStack>
 
-        {/* Level badge */}
-        {user?.level && (
-          <YStack items="center" gap="$1">
-            <View 
-              bg="$accent" 
-              width={60} 
-              height={60} 
-              rounded="$10" 
-              items="center" 
-              justify="center"
-              animation="bouncy"
-              enterStyle={{ scale: 0 }}
-              scale={1}
-            >
-              <Text fontSize="$7" fontWeight="bold" color="white">
-                {user.level}
-              </Text>
-            </View>
-            <Text fontSize="$2" color="$color10" fontWeight="600">
-              LEVEL
-            </Text>
-          </YStack>
-        )}
+        {/* Shop button */}
+        <YStack items="center" gap="$1">
+          <ShoppingBag size={20} color="$color10" />
+          <Text fontSize="$2" color="$color10">
+            SHOP
+          </Text>
+        </YStack>
       </XStack>
 
       {/* Stats row */}
@@ -75,7 +59,7 @@ const ProfileHeader = React.memo(({ user }: { user: any }) => (
             </Text>
           </XStack>
           <Text fontSize="$2" color="$color10" textTransform="uppercase">
-            score
+            jabberscore
           </Text>
         </YStack>
 
@@ -94,18 +78,17 @@ const ProfileHeader = React.memo(({ user }: { user: any }) => (
           </YStack>
         )}
 
-        {/* Badges */}
-        {user?.badges && user.badges.length > 0 && (
+        {/* Level */}
+        {user?.level && (
           <YStack items="center" gap="$1" flex={1}>
-            <XStack gap="$1">
-              {user.badges.slice(0, 3).map((badge: string, i: number) => (
-                <Text key={i} fontSize="$6">
-                  {badge}
-                </Text>
-              ))}
+            <XStack items="center" gap="$2">
+              <Star size={24} color="$accent" fill="$accent" />
+              <Text fontSize="$6" fontWeight="bold" color="$accent">
+                {user.level}
+              </Text>
             </XStack>
             <Text fontSize="$2" color="$color10" textTransform="uppercase">
-              badges
+              level
             </Text>
           </YStack>
         )}
@@ -140,38 +123,18 @@ export default function ProfileScreen() {
   const localNewPost = useLocalPostStore((s) => s.localNewPost);
   const { data: currentUser } = useCurrentUser();
 
-  // Stable render function with callbacks
+  // Stable render function
   const renderPost = useCallback((post: Post) => {
-    const handleReact = (emoji: string) => {
-      console.log('Reacted with:', emoji, 'on post:', post.id)
-    }
-
-    const handleComment = () => {
-      console.log('Comment on own post:', post.id)
-    }
-
-    const handleVote = (type: 'up' | 'down') => {
-      console.log('Voted', type, 'on post:', post.id)
-    }
-
     return (
       <PostCard
         key={post.id}
         post={post}
-        onReact={handleReact}
-        onComment={handleComment}
-        onVote={handleVote}
       />
     )
   }, []);
 
   return (
     <Screen>
-      <Header
-        title="profile"
-        rightComponent={<HeaderRight />}
-      />
-
       <ProfileHeader user={currentUser} />
       
       <YStack flex={1} bg="$background">

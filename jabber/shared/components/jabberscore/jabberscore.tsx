@@ -88,7 +88,6 @@ export default function JabberScore() {
       <XStack 
         items="center" 
         gap="$2" 
-        bg="$color2" 
         px="$3" 
         py="$2" 
         rounded="$10"
@@ -101,65 +100,21 @@ export default function JabberScore() {
     )
   }
 
-  const level = user?.level || 1;
-  const streak = user?.streak || 0;
-
   return (
-    <YStack gap="$1" items="flex-end">
-      {/* Main Score Display */}
-      <XStack 
-        items="center" 
-        gap="$2" 
-        bg="$color2" 
-        px="$3" 
-        py="$2" 
-        rounded="$10"
-        pressStyle={{ scale: 0.95 }}
-        animation="bouncy"
-      >
-        <Trophy size={18} color="$yellow10" fill="$yellow10" />
-        <ScoreAnimation 
-          score={user?.jabberScore ?? 0} 
-          previousScore={previousScore}
-        />
-      </XStack>
-
-      {/* Level & Streak Row */}
-      <XStack gap="$2">
-        {/* Level Badge */}
-        <XStack 
-          items="center" 
-          gap="$1" 
-          bg="$accent" 
-          px="$2" 
-          py="$1" 
-          rounded="$10"
-        >
-          <Zap size={12} color="white" fill="white" />
-          <Text fontSize="$1" color="white" fontWeight="bold">
-            LV{level}
-          </Text>
-        </XStack>
-
-        {/* Streak Badge */}
-        {streak > 0 && (
-          <XStack 
-            items="center" 
-            gap="$1" 
-            bg="$yellow10" 
-            px="$2" 
-            py="$1" 
-            rounded="$10"
-            animation="quick"
-            enterStyle={{ scale: 0 }}
-          >
-            <Flame size={12} color="white" fill="white" />
-            <Text fontSize="$1" color="white" fontWeight="bold">
-              {streak}
-            </Text>
-          </XStack>
-        )}
-      </XStack>
-    </YStack>
+    <XStack 
+      items="center" 
+      gap="$2"  
+      px="$3" 
+      py="$2" 
+      rounded="$10"
+      pressStyle={{ scale: 0.95 }}
+      animation="bouncy"
+    >
+      <Trophy size={18} color="$yellow10" fill="$yellow10" />
+      <ScoreAnimation 
+        score={user?.jabberScore ?? 0} 
+        previousScore={previousScore}
+      />
+    </XStack>
   )
 }

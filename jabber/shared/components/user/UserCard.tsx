@@ -79,21 +79,6 @@ const RankDisplay = React.memo(({
   );
 });
 
-// Badge display
-const BadgeDisplay = React.memo(({ badges }: { badges?: string[] }) => {
-  if (!badges || badges.length === 0) return null;
-
-  return (
-    <XStack gap="$1">
-      {badges.slice(0, 3).map((badge, i) => (
-        <Text key={i} fontSize="$3">
-          {badge}
-        </Text>
-      ))}
-    </XStack>
-  );
-});
-
 // Streak display
 const StreakDisplay = React.memo(({ streak }: { streak?: number }) => {
   if (!streak || streak === 0) return null;
@@ -154,7 +139,6 @@ export const UserCard = React.memo(({
             >
               @{user.username}
             </Text>
-            <BadgeDisplay badges={user.badges} />
           </XStack>
           
           <XStack items="center" gap="$3">

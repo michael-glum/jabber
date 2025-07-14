@@ -1,47 +1,81 @@
 // shared/components/post/PostCard.tsx
 import React, { useState, useCallback, useMemo } from 'react';
-import { YStack, XStack, Text, AnimatePresence, View, Button } from 'tamagui';
-import { MessageCircle, ChevronUp, ChevronDown, Sparkles, Zap, TrendingUp, Plus } from '@tamagui/lucide-icons';
+import { YStack, XStack, Text, AnimatePresence, View, Button, useTheme } from 'tamagui';
+import { MessageCircle, Sparkles, Zap, TrendingUp, CirclePlus } from '@tamagui/lucide-icons';
 import { Post } from '~/shared/models/types';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable } from 'react-native';
+import { api } from '~/shared/services/api';
+import { useRouter } from 'expo-router';
+import { ReactionPickerModal } from './ReactionPickerModal';
+import Svg, { Path } from 'react-native-svg';
 
 interface PostCardProps {
   post: Post;
-  onReact?: (emoji: string) => void;
-  onComment?: () => void;
-  onVote?: (type: 'up' | 'down') => void;
-  onShowReactionPicker?: (postId: string) => void;
 }
 
-// Memoized sub-components
-const VoteButton = React.memo(({ 
-  type, 
-  isActive, 
-  onPress 
+// Custom Heart Icon Component
+const HeartIcon = React.memo(({ 
+  size = 22, 
+  color = "$color10", 
+  isFilled = false 
 }: { 
-  type: 'up' | 'down'; 
-  isActive: boolean; 
-  onPress: () => void;
+  size?: number; 
+  color?: string; 
+  isFilled?: boolean;
 }) => {
-  const Icon = type === 'up' ? ChevronUp : ChevronDown;
-  const activeColor = type === 'up' ? '$green10' : '$red10';
+  const theme = useTheme();
+  const colorValue = theme[color.replace('$', '')]?.val || color;
   
   return (
-    <Button
-      size="$2"
-      bg="transparent"
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+        fill={isFilled ? colorValue : "none"}
+        stroke={colorValue}
+        strokeWidth={isFilled ? 2 : 2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+});
+
+// Memoized sub-components
+const LikeButton = React.memo(({ 
+  isLiked, 
+  onPress,
+  likeCount 
+}: { 
+  isLiked: boolean; 
+  onPress: () => void;
+  likeCount: number;
+}) => {
+  return (
+    <XStack
+      bg={isLiked ? "$red2" : "transparent"}
       onPress={onPress}
       pressStyle={{ scale: 0.95 }}
-      animation="bouncy"
-      px="$1"
+      px="$2"
+      py="$1"
+      gap="$2"
+      items="center"
+      rounded="$10"
+      borderWidth={isLiked ? 1 : 0}
+      borderColor={isLiked ? "$red5" : "transparent"}
     >
-      <Icon 
-        size={24} 
-        color={isActive ? activeColor : "$color10"} 
-        strokeWidth={2.5}
+      <HeartIcon 
+        size={22} 
+        color={isLiked ? "$red10" : "$color10"} 
+        isFilled={isLiked}
       />
-    </Button>
+      <Text 
+        fontSize="$3" 
+        fontWeight="bold" 
+        color={isLiked ? "$red10" : "$color10"}
+      >
+        {likeCount > 999 ? `${(likeCount / 1000).toFixed(1)}k` : String(likeCount)}
+      </Text>
+    </XStack>
   );
 });
 
@@ -56,28 +90,27 @@ const ReactionButton = React.memo(({
   isUserReaction: boolean; 
   onPress: () => void;
 }) => (
-  <Pressable onPress={onPress}>
-    <XStack
-      bg={isUserReaction ? "$accent" : "$backgroundStrong"}
-      borderWidth={2}
-      borderColor={isUserReaction ? "$accentForeground" : "$borderColor"}
-      rounded="$10"
-      px="$2"
-      py="$1"
-      items="center"
-      gap="$1"
-      pressStyle={{ scale: 0.95 }}
+  <XStack
+    onPress={onPress}
+    bg={isUserReaction ? "$yellow2" : "$backgroundStrong"}
+    borderWidth={2}
+    borderColor={isUserReaction ? "$yellow5" : "$borderColor"}
+    rounded="$10"
+    px="$2"
+    py="$1"
+    items="center"
+    gap="$1"
+    pressStyle={{ scale: 0.95 }}
+  >
+    <Text fontSize="$3" color={isUserReaction ? "$yellow10" : "$color"}>{emoji}</Text>
+    <Text 
+      fontSize="$2" 
+      fontWeight="bold"
+      color={isUserReaction ? "$yellow10" : "$color10"}
     >
-      <Text fontSize="$3">{emoji}</Text>
-      <Text 
-        fontSize="$2" 
-        fontWeight="bold"
-        color={isUserReaction ? "white" : "$color10"}
-      >
-        {count > 999 ? `${(count / 1000).toFixed(1)}k` : count}
-      </Text>
-    </XStack>
-  </Pressable>
+      {count > 999 ? `${(count / 1000).toFixed(1)}k` : String(count)}
+    </Text>
+  </XStack>
 ));
 
 const CommentButton = React.memo(({ 
@@ -97,7 +130,7 @@ const CommentButton = React.memo(({
     <XStack items="center" gap="$2">
       <MessageCircle size={20} color="$color10" />
       <Text fontSize="$3" fontWeight="600" color="$color10">
-        {count > 999 ? `${(count / 1000).toFixed(1)}k` : count}
+        {count > 999 ? `${(count / 1000).toFixed(1)}k` : String(count)}
       </Text>
     </XStack>
   </Button>
@@ -108,23 +141,18 @@ const AddReactionButton = React.memo(({
 }: { 
   onPress: () => void;
 }) => (
-  <Button
-    size="$1.5"
+  <XStack
     bg="$backgroundStrong"
-    borderWidth={1}
-    borderColor="$color10"
-          onPress={onPress}
-      pressStyle={{ scale: 0.95 }}
-      circular
-      px="$2"
+    onPress={onPress}
+    pressStyle={{ scale: 0.95 }}
   >
-    <Plus size={18} color="$color10" />
-  </Button>
+    <CirclePlus size={22} color="$color10" />
+  </XStack>
 ));
 
 // Jabber score calculation with boost multiplier
-const calculateJabberScore = (post: Post) => {
-  const reactionCount = Object.values(post.reactions || {}).reduce((a, b) => a + b, 0);
+const calculateJabberScore = (post: Post, localReactions: Record<string, number>) => {
+  const reactionCount = Object.values(localReactions).reduce((a, b) => a + b, 0);
   const baseScore = post.likes + (reactionCount * 2) + (post.commentCount * 3);
   const boostMultiplier = 1 + (post.boostLevel * 0.5);
   return Math.floor(baseScore * boostMultiplier);
@@ -150,7 +178,7 @@ const TrendingBadge = React.memo(({ trendingRank }: { trendingRank?: number }) =
       shadowRadius={4}
       shadowOffset={{ width: 0, height: 2 }}
     >
-      <TrendingUp size={14} color="white" fill="white" />
+      <TrendingUp size={14} color="white" />
       <Text fontSize="$2" fontWeight="bold" color="white">
         #{trendingRank} Trending
       </Text>
@@ -159,192 +187,260 @@ const TrendingBadge = React.memo(({ trendingRank }: { trendingRank?: number }) =
 });
 
 export const PostCard = React.memo(({ 
-  post, 
-  onReact, 
-  onComment, 
-  onVote,
-  onShowReactionPicker 
+  post
 }: PostCardProps) => {
-  const [userVote, setUserVote] = useState<'up' | 'down' | null>(null);
+  const router = useRouter();
+  const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [userReaction, setUserReaction] = useState(post.userReaction);
   
+  // Local reactions state to track changes
+  const [localReactions, setLocalReactions] = useState<Record<string, number>>(post.reactions || {});
+  
+  // Modal state management
+  const [reactionPickerVisible, setReactionPickerVisible] = useState(false);
+  
   // Memoize calculated values
-  const jabberScore = useMemo(() => calculateJabberScore(post), [post]);
-  const voteCount = useMemo(() => {
+  const jabberScore = useMemo(() => calculateJabberScore(post, localReactions), [post, localReactions]);
+  const likeCount = useMemo(() => {
     let count = post.likes;
-    if (userVote === 'up') count += 1;
-    if (userVote === 'down') count -= 1;
+    if (isLiked && !post.isLiked) count += 1;
+    if (!isLiked && post.isLiked) count -= 1;
     return count;
-  }, [post.likes, userVote]);
+  }, [post.likes, isLiked, post.isLiked]);
   
   const sortedReactions = useMemo(() => 
-    Object.entries(post.reactions || {})
+    Object.entries(localReactions)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 4)
       .map(([emoji, count]) => ({ emoji, count })),
-    [post.reactions]
+    [localReactions]
   );
 
-  const isBoosted = post.boostLevel && post.boostLevel > 0;
-  const isTrending = post.trendingRank && post.trendingRank <= 10;
+  const isBoosted = Boolean(post.boostLevel && post.boostLevel > 0);
+  const isTrending = Boolean(post.trendingRank && post.trendingRank <= 10);
+
+  // Update local reactions when post.reactions changes
+  React.useEffect(() => {
+    setLocalReactions(post.reactions || {});
+  }, [post.reactions]);
 
   // Stable callbacks
-  const handleVote = useCallback((type: 'up' | 'down') => {
-    setUserVote(current => current === type ? null : type);
-    onVote?.(type);
-  }, [onVote]);
+  const handleLike = useCallback(async () => {
+    const newLikedState = !isLiked;
+    setIsLiked(newLikedState);
+    
+    try {
+      if (newLikedState) {
+        await api.likePost(post.id);
+      } else {
+        await api.unlikePost(post.id);
+      }
+    } catch (error) {
+      // Revert state on error
+      setIsLiked(!newLikedState);
+      console.error('Error handling like:', error);
+    }
+  }, [isLiked, post.id]);
 
-  const handleReactionPress = useCallback((emoji: string) => {
-    setUserReaction(current => emoji === current ? undefined : emoji);
-    onReact?.(emoji);
-  }, [onReact]);
+  const handleReactionPress = useCallback(async (emoji: string) => {
+    const isTogglingOff = emoji === userReaction;
+    const newReaction = isTogglingOff ? undefined : emoji;
+    const previousReaction = userReaction;
+    
+    setUserReaction(newReaction);
+    
+    // Update local reactions state
+    setLocalReactions(prev => {
+      const newReactions = { ...prev };
+      
+      if (isTogglingOff) {
+        // User is removing their reaction
+        if (newReactions[emoji]) {
+          newReactions[emoji] = Math.max(0, newReactions[emoji] - 1);
+          if (newReactions[emoji] === 0) {
+            delete newReactions[emoji];
+          }
+        }
+      } else {
+        // User is adding a new reaction
+        // First, remove the previous reaction (decrement count if it exists in original post)
+        if (previousReaction) {
+          if (newReactions[previousReaction]) {
+            newReactions[previousReaction] = Math.max(0, newReactions[previousReaction] - 1);
+            if (newReactions[previousReaction] === 0) {
+              delete newReactions[previousReaction];
+            }
+          }
+        }
+        
+        // Add or increment the new reaction
+        newReactions[emoji] = (newReactions[emoji] || 0) + 1;
+      }
+      
+      return newReactions;
+    });
+    
+    try {
+      if (newReaction) {
+        await api.reactToPost(post.id, emoji);
+      } else {
+        await api.removeReaction(post.id);
+      }
+    } catch (error) {
+      // Revert state on error
+      setUserReaction(previousReaction);
+      setLocalReactions(post.reactions || {});
+      console.error('Error handling reaction:', error);
+    }
+  }, [userReaction, post.id, post.reactions]);
+
+  const handleComment = useCallback(() => {
+    // Navigate to comments screen - using a modal approach for now
+    console.log('Navigate to comments for post:', post.id);
+    // TODO: Implement proper navigation to comments
+  }, [post.id]);
 
   const handleAddReaction = useCallback(() => {
-    onShowReactionPicker?.(post.id);
-  }, [onShowReactionPicker, post.id]);
+    setReactionPickerVisible(true);
+  }, []);
+
+  const handleSelectReaction = useCallback(async (emoji: string) => {
+    await handleReactionPress(emoji);
+  }, [handleReactionPress]);
+
+  const handleCloseReactionPicker = useCallback(() => {
+    setReactionPickerVisible(false);
+  }, []);
 
   return (
-    <YStack
-      bg="$backgroundStrong"
-      rounded="$6"
-      mx="$2"
-      my="$2"
-      overflow="hidden"
-      borderWidth={isBoosted ? 3 : 2}
-      borderColor={isBoosted ? "$yellow5" : "$borderColor"}
-      shadowColor={isBoosted ? "$yellow10" : "$shadowColor"}
-      shadowOpacity={isBoosted ? 0.3 : 0.1}
-      shadowRadius={isBoosted ? 12 : 4}
-      shadowOffset={{ width: 0, height: 4 }}
-      animation="quick"
-      pressStyle={{ scale: 0.99 }}
-    >
-      {/* Gradient background for boosted posts */}
-      {isBoosted && (
-        <View 
-          position="absolute" 
-          t={0} 
-          l={0} 
-          r={0} 
-          height={4}
-          opacity={0.8}
-        >
-          <LinearGradient
-            colors={['#FCD34D', '#F59E0B', '#DC2626']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{ flex: 1 }}
-          />
-        </View>
-      )}
-
-      {/* Trending badge */}
-      {isTrending && <TrendingBadge trendingRank={post.trendingRank} />}
-
-      {/* Content */}
-      <YStack p="$4" gap="$3">
-        {/* Header */}
-        <XStack items="center" justify="space-between">
-          <XStack items="center" gap="$2">
-            <Text
-              fontSize="$4"
-              fontWeight="600"
-              color="$color10"
-              textTransform="lowercase"
-            >
-              @{post.username}
-            </Text>
-            {isBoosted && (
-              <XStack 
-                items="center" 
-                gap="$1" 
-                bg="$yellow2" 
-                px="$2" 
-                py="$0.5" 
-                rounded="$10"
-              >
-                <Zap size={14} color="$yellow10" fill="$yellow10" />
-                <Text fontSize="$2" fontWeight="bold" color="$yellow10">
-                  {post.boostLevel}x
-                </Text>
-              </XStack>
-            )}
-          </XStack>
-          
-          {/* Jabber Score */}
-          <XStack 
-            items="center" 
-            gap="$1.5"
-            bg="$accent"
-            px="$2.5"
-            py="$1"
-            rounded="$10"
+    <>
+      <YStack
+        bg="$backgroundStrong"
+        rounded="$6"
+        mx="$2"
+        my="$2"
+        overflow="hidden"
+        borderWidth={isBoosted ? 3 : 2}
+        borderColor={isBoosted ? "$yellow5" : "$borderColor"}
+        shadowColor={isBoosted ? "$yellow10" : "$shadowColor"}
+        shadowOpacity={isBoosted ? 0.3 : 0.1}
+        shadowRadius={isBoosted ? 12 : 4}
+        shadowOffset={{ width: 0, height: 4 }}
+        animation="quick"
+        pressStyle={{ scale: 0.99 }}
+      >
+        {/* Gradient background for boosted posts */}
+        {isBoosted && (
+          <View 
+            position="absolute" 
+            t={0} 
+            l={0} 
+            r={0} 
+            height={4}
+            opacity={0.8}
           >
-            <Text fontSize="$3" fontWeight="bold" color="white">
-              {jabberScore}
-            </Text>
-            <Text fontSize="$2" color="white">
-              pts
-            </Text>
-          </XStack>
-        </XStack>
-
-        {/* Post Text */}
-        <Text
-          fontSize="$5"
-          lineHeight="$6"
-          color="$color"
-          fontWeight="500"
-        >
-          {post.text}
-        </Text>
-
-        {/* Action buttons */}
-        <XStack items="center" justify="space-between" mt="$2">
-          {/* Left side: Comment and React buttons */}
-          <XStack items="center" gap="$2">
-            <CommentButton count={post.commentCount} onPress={onComment} />
-            <AddReactionButton onPress={handleAddReaction} />
-          </XStack>
-
-          {/* Right side: Vote buttons and count */}
-          <XStack items="center" gap="$1">
-            <VoteButton
-              type="up"
-              isActive={userVote === 'up'}
-              onPress={() => handleVote('up')}
+            <LinearGradient
+              colors={['#FCD34D', '#F59E0B', '#DC2626']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ flex: 1 }}
             />
-            <Text 
-              fontSize="$3" 
-              fontWeight="bold" 
-              color="$color10"
-            >
-              {voteCount > 999 ? `${(voteCount / 1000).toFixed(1)}k` : voteCount}
-            </Text>
-            <VoteButton
-              type="down"
-              isActive={userVote === 'down'}
-              onPress={() => handleVote('down')}
-            />
-          </XStack>
-        </XStack>
-
-        {/* Reactions */}
-        {sortedReactions.length > 0 && (
-          <XStack flexWrap="wrap" gap="$2" mt="$1">
-            {sortedReactions.map(({ emoji, count }) => (
-              <ReactionButton 
-                key={emoji}
-                emoji={emoji}
-                count={count}
-                isUserReaction={emoji === userReaction}
-                onPress={() => handleReactionPress(emoji)}
-              />
-            ))}
-          </XStack>
+          </View>
         )}
+        {/* Trending badge */}
+        {isTrending && <TrendingBadge trendingRank={post.trendingRank} />}
+        {/* Content */}
+        <YStack p="$4" gap="$3">
+          {/* Header */}
+          <XStack items="center" justify="space-between">
+            <XStack items="center" gap="$3">
+              {/* Username and Title */}
+              <YStack gap="$0.5">
+                <Text
+                  fontSize="$4"
+                  fontWeight="600"
+                  color="$color10"
+                  textTransform="lowercase"
+                >
+                  @{post.username}
+                </Text>
+                {post.userTitle && (
+                  <Text
+                    fontSize="$2"
+                    fontWeight="500"
+                    color="$color8"
+                    fontStyle="italic"
+                  >
+                    {post.userTitle}
+                  </Text>
+                )}
+              </YStack>
+              
+              {isBoosted && (
+                <XStack 
+                  items="center" 
+                  gap="$1" 
+                  bg="$yellow2" 
+                  px="$2" 
+                  py="$0.5" 
+                  rounded="$10"
+                >
+                  <Zap size={14} color="$yellow10" />
+                  <Text fontSize="$2" fontWeight="bold" color="$yellow10">
+                    {post.boostLevel}x
+                  </Text>
+                </XStack>
+              )}
+            </XStack>
+          </XStack>
+          {/* Post Text */}
+          <Text
+            fontSize="$5"
+            lineHeight="$6"
+            color="$color"
+            fontWeight="500"
+          >
+            {post.text}
+          </Text>
+          {/* Action buttons */}
+          <XStack items="center" justify="space-between" mt="$2">
+            {/* Left side: Comment and React buttons */}
+            <XStack items="center" gap="$2">
+              <CommentButton count={post.commentCount} onPress={handleComment} />
+              <AddReactionButton onPress={handleAddReaction} />
+            </XStack>
+            {/* Right side: Like button and count */}
+            <LikeButton
+              isLiked={isLiked}
+              onPress={handleLike}
+              likeCount={likeCount}
+            />
+          </XStack>
+          {/* Reactions */}
+          {sortedReactions.length > 0 && (
+            <XStack flexWrap="wrap" gap="$2" mt="$1">
+              {sortedReactions.map(({ emoji, count }) => (
+                <ReactionButton 
+                  key={emoji}
+                  emoji={emoji}
+                  count={count}
+                  isUserReaction={emoji === userReaction}
+                  onPress={() => handleReactionPress(emoji)}
+                />
+              ))}
+            </XStack>
+          )}
+        </YStack>
       </YStack>
-    </YStack>
+
+      {/* Reaction Picker Modal */}
+      <ReactionPickerModal
+        visible={reactionPickerVisible}
+        onClose={handleCloseReactionPicker}
+        onSelectReaction={handleSelectReaction}
+        currentReaction={userReaction}
+      />
+    </>
   );
 }, (prevProps, nextProps) => {
   return (

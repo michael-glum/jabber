@@ -4,6 +4,7 @@ export type Post = {
   text: string;
   username: string;
   userId: string;
+  userTitle?: string;
   likes: number;
   reactions: Record<string, number>;
   commentCount: number;
@@ -11,9 +12,6 @@ export type Post = {
   isLiked?: boolean;
   userReaction?: string;
   boostLevel: number;
-  upvotes: number;
-  downvotes: number;
-  userVote?: 'up' | 'down' | null;
   trendingRank?: number;
 }
 
@@ -24,7 +22,7 @@ export type User = {
   jabberScore: number;
   level?: number;
   streak?: number;
-  badges?: string[];
+  title?: string;
 };
 
 export type Comment = {

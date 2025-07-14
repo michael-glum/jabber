@@ -12,27 +12,12 @@ import { Post } from '~/shared/models/types'
 const HeaderRight = React.memo(() => <JabberScore />)
 
 export default function HotScreen() {
-  // Stable render function with callbacks
+  // Stable render function
   const renderPost = useCallback((post: Post) => {
-    const handleReact = (emoji: string) => {
-      console.log('Reacted with:', emoji, 'on post:', post.id)
-    }
-
-    const handleComment = () => {
-      console.log('Comment on post:', post.id)
-    }
-
-    const handleVote = (type: 'up' | 'down') => {
-      console.log('Voted', type, 'on post:', post.id)
-    }
-
     return (
       <PostCard
         key={post.id}
         post={post}
-        onReact={handleReact}
-        onComment={handleComment}
-        onVote={handleVote}
       />
     )
   }, [])

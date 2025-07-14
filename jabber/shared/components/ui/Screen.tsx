@@ -10,7 +10,7 @@ export const Screen = ({ children }: { children: React.ReactNode }) => {
       flex={1}
       pt={insets.top}
       px={4}
-      bg="$background"
+      bg="white"
     >
       {children}
     </View>

@@ -16,30 +16,12 @@ const HeaderRight = React.memo(() => <JabberScore />)
 export default function ForYouScreen() {
   const localNewPost = useLocalPostStore((state) => state.localNewPost)
 
-  // Stable render function with proper callbacks
+  // Stable render function
   const renderPost = useCallback((post: Post) => {
-    const handleReact = (emoji: string) => {
-      // TODO: Implement reaction logic
-      console.log('Reacted with:', emoji, 'on post:', post.id)
-    }
-
-    const handleComment = () => {
-      // TODO: Navigate to comments
-      console.log('Comment on post:', post.id)
-    }
-
-    const handleVote = (type: 'up' | 'down') => {
-      // TODO: Implement voting logic
-      console.log('Voted', type, 'on post:', post.id)
-    }
-
     return (
       <PostCard
         key={post.id}
         post={post}
-        onReact={handleReact}
-        onComment={handleComment}
-        onVote={handleVote}
       />
     )
   }, [])

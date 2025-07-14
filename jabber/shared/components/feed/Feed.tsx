@@ -55,6 +55,7 @@ export function Feed<T>({ tabNames, dataHookMap, renderItem, localNewItem }: Fee
   const defaultTab = tabNames ? tabNames[0] : 'default';
   const [selectedTab, setSelectedTab] = React.useState(defaultTab);
   const feed = dataHookMap[selectedTab]?.();
+  const flatListRef = React.useRef<FlatList<T>>(null);
 
   // Memoize combined data more efficiently
   const combinedData = useMemo(() => {
@@ -76,6 +77,16 @@ export function Feed<T>({ tabNames, dataHookMap, renderItem, localNewItem }: Fee
 
     return items;
   }, [feed.data, feed.keyExtractor, localNewItem]);
+
+  // Auto-scroll to top when new local item is added
+  React.useEffect(() => {
+    if (localNewItem && flatListRef.current) {
+      // Small delay to ensure the item is rendered
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      }, 100);
+    }
+  }, [localNewItem]);
 
   // Optimized render function with better memoization
   const renderListItem = useCallback(
@@ -120,10 +131,6 @@ export function Feed<T>({ tabNames, dataHookMap, renderItem, localNewItem }: Fee
     [feed.isLoading, combinedData.length, handleRefresh]
   );
 
-  if ((!feed.data || feed.data.length === 0) && feed.isLoading) {
-    return <LoadingComponent />;
-  }
-
   return (
     <YStack flex={1}>
       {tabNames && (
@@ -133,7 +140,11 @@ export function Feed<T>({ tabNames, dataHookMap, renderItem, localNewItem }: Fee
           onTabSelect={handleTabSelect}
         />
       )}
-      <FlatList
+      {(!feed.data || feed.data.length === 0) && feed.isLoading ? (
+        <LoadingComponent />
+      ) : (
+        <FlatList
+        ref={flatListRef}
         data={combinedData}
         keyExtractor={keyExtractor}
         renderItem={renderListItem}
@@ -172,6 +183,7 @@ export function Feed<T>({ tabNames, dataHookMap, renderItem, localNewItem }: Fee
         bounces={true}
         overScrollMode="never"
       />
+      )}
     </YStack>
   );
 }
